@@ -146,14 +146,39 @@ def procesar_mga_xml(xml_buffer) -> pd.DataFrame:
     return df_resultado.drop_duplicates() if not df_resultado.empty else df_resultado
 
 
+
+
 # ============================================================
 # FUNCIONES EXTRACTORAS: ARCHIVO WORD (PYTHON-DOCX)
 # ============================================================
+
 def extraer_texto_y_tablas_docx(file_buffer) -> str:
-    """Lee el archivo .docx y lo convierte en texto plano estructurado por bloques."""
+    """
+    Lee el archivo .docx extrayendo texto de párrafos, tablas de primer nivel 
+    y TABLAS ANIDADAS (dentro de celdas o contenedores).
+    """
     doc = docx.Document(file_buffer)
     contenido_total = []
 
+    def procesar_tabla(tabla):
+        """Extrae filas y recursivamente procesa tablas anidadas dentro de celdas."""
+        for fila in tabla.rows:
+            textos_celdas = []
+            for celda in fila.cells:
+                # Texto plano de la celda
+                texto_celda = celda.text.strip().replace("\n", " ")
+                textos_celdas.append(texto_celda)
+                
+                # DETECCIÓN DE TABLAS ANIDADAS
+                if celda.tables:
+                    for tabla_anidada in celda.tables:
+                        contenido_total.append("#")
+                        procesar_tabla(tabla_anidada)
+
+            if any(textos_celdas):
+                contenido_total.append(" | ".join(textos_celdas))
+
+    # Recorrido jerárquico de elementos del cuerpo
     for elemento in doc.element.body:
         if elemento.tag.endswith("p"):
             p = docx.text.paragraph.Paragraph(elemento, doc)
@@ -162,9 +187,7 @@ def extraer_texto_y_tablas_docx(file_buffer) -> str:
         elif elemento.tag.endswith("tbl"):
             tabla = docx.table.Table(elemento, doc)
             contenido_total.append("#")
-            for fila in tabla.rows:
-                textos_celdas = [celda.text.strip().replace("\n", " ") for celda in fila.cells]
-                contenido_total.append(" | ".join(textos_celdas))
+            procesar_tabla(tabla)
 
     return "\n".join(contenido_total)
 
@@ -199,11 +222,10 @@ def extraer_encabezado_estandar(texto_bruto: str) -> dict:
     return metadatos
 
 
-
 def procesar_tablas_estandar(texto_bruto: str):
     """
-    Procesa las tablas de la Cadena de Valor (DOCX) detectando y extrayendo 
-    dinámicamente las columnas de la Tabla 5 (Actividades y Finanzas).
+    Procesa las tablas de la Cadena de Valor (DOCX) identificando
+    específicamente cada sección sin conflictos de coincidencia.
     """
     bloques = [b.strip() for b in texto_bruto.split("#") if b.strip()]
     dicc_indicadores = {}
@@ -228,16 +250,13 @@ def procesar_tablas_estandar(texto_bruto: str):
         if not lineas:
             continue
         
-        encabezado_bruto = lineas[0]
-        encabezado_norm = normalizar_texto(encabezado_bruto)
-        
-        # Unimos las primeras líneas para detección alternativa si el encabezado tiene saltos
+        encabezado_norm = normalizar_texto(lineas[0])
         contexto_bloque = normalizar_texto(" ".join(lineas[:3]))
 
         # ----------------------------------------------------
         # TABLA 1: Datos Básicos y Objetivos
         # ----------------------------------------------------
-        if "no.cv" in encabezado_norm and "objetivo general proyecto" in encabezado_norm:
+        if "no.cv" in encabezado_norm and "objetivo general" in encabezado_norm:
             for l in lineas[1:]:
                 partes = descomponer_linea(l)
                 if partes and partes[0].isdigit():
@@ -275,8 +294,9 @@ def procesar_tablas_estandar(texto_bruto: str):
 
         # ----------------------------------------------------
         # TABLA 3: Metas, Productos e Indicadores
+        # Detección específica evitando capturar la Tabla 5
         # ----------------------------------------------------
-        elif "meta producto plan" in encabezado_norm and "meta total mga" in encabezado_norm:
+        elif "meta producto plan" in encabezado_norm or "meta total mga" in encabezado_norm:
             for l in lineas[1:]:
                 partes = descomponer_linea(l)
                 if partes and partes[0].isdigit():
@@ -307,7 +327,7 @@ def procesar_tablas_estandar(texto_bruto: str):
         # ----------------------------------------------------
         # TABLA 4: Observaciones y Tipificación
         # ----------------------------------------------------
-        elif "observacion por indicador mga" in encabezado_norm and "producto cv - mga" in encabezado_norm:
+        elif "observacion por indicador" in encabezado_norm or "producto cv - mga" in encabezado_norm:
             for l in lineas[1:]:
                 partes = descomponer_linea(l)
                 if partes and partes[0].isdigit():
@@ -322,10 +342,12 @@ def procesar_tablas_estandar(texto_bruto: str):
                     dicc_indicadores[idx]["Tipo prod2"] = obtener_valor(partes, 5)
 
         # ----------------------------------------------------
-        # TABLA 5: Actividades y Presupuesto POAI (ALTA DETECCIÓN)
+        # TABLA 5: Actividades y Presupuesto POAI
+        # Identificación inequívoca por "poai" o presencia combinada de actividades y costo
         # ----------------------------------------------------
-        elif any(kw in encabezado_norm or kw in contexto_bloque for kw in ["cod", "meta", "actividad", "poai", "recurso", "presupuesto"]):
-            # Extraemos los nombres exactos de las columnas desde la primera línea del bloque
+        elif any(term in contexto_bloque for term in ["poai", "costo total", "presupuesto poai", "fuente de financiacion"]) or \
+             ("actividad" in contexto_bloque and ("recurso" in contexto_bloque or "valor" in contexto_bloque or "etapa" in contexto_bloque)):
+            
             nombres_columnas = [c.strip() for c in lineas[0].split("|") if c.strip()]
             
             for l in lineas[1:]:
@@ -333,36 +355,20 @@ def procesar_tablas_estandar(texto_bruto: str):
                 texto_linea = " ".join(partes).upper()
                 texto_norm_linea = normalizar_texto(texto_linea)
 
-                # Detección de fila de Totales / Resumen Financiero
                 if "TOTAL" in texto_linea or "PROYECTO DE INVERSION" in texto_norm_linea:
                     recurso_total_proyecto = partes[-1] if partes else "$0"
                     continue
 
-                # Filtrar firmas o líneas vacías/incompletas
                 if len(partes) >= 2 and "FIRMA" not in texto_linea:
                     actividad = {}
                     for idx_col, nombre_col in enumerate(nombres_columnas):
                         actividad[nombre_col] = obtener_valor(partes, idx_col)
                     
-                    # Extrae 'MP' seguido de números para cruces de información
                     match_mp = re.search(r"(MP\d+)", texto_linea)
                     actividad["Código MP Extrayendo"] = match_mp.group(1) if match_mp else "Sin Código"
                     
                     lista_actividades_poai.append(actividad)
 
-    # ----------------------------------------------------
-    # CONSTRUCCIÓN Y SALIDA DE DATAFRAMES
-    # ----------------------------------------------------
-    df_indicadores = pd.DataFrame.from_dict(dicc_indicadores, orient="index")
-    if not df_indicadores.empty and "Código MP" in df_indicadores.columns:
-        cols = list(df_indicadores.columns)
-        cols.insert(0, cols.pop(cols.index("Código MP")))
-        df_indicadores = df_indicadores[cols]
-
-    df_poai = pd.DataFrame(lista_actividades_poai)
-    return df_indicadores, df_poai, recurso_total_proyecto, nombre_proyecto_tabla
-
-    
     # ----------------------------------------------------
     # CONSTRUCCIÓN DE DATAFRAMES FINALES
     # ----------------------------------------------------
@@ -374,6 +380,11 @@ def procesar_tablas_estandar(texto_bruto: str):
 
     df_poai = pd.DataFrame(lista_actividades_poai)
     return df_indicadores, df_poai, recurso_total_proyecto, nombre_proyecto_tabla
+
+
+
+
+
 
 
 # ============================================================
