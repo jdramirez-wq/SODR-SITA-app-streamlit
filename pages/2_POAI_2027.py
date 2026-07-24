@@ -199,8 +199,12 @@ def extraer_encabezado_estandar(texto_bruto: str) -> dict:
     return metadatos
 
 
+
 def procesar_tablas_estandar(texto_bruto: str):
-    """Procesa las tablas de la Cadena de Valor (DOCX)."""
+    """
+    Procesa las tablas de la Cadena de Valor (DOCX) detectando y extrayendo 
+    dinámicamente las columnas de la Tabla 5 (Actividades y Finanzas).
+    """
     bloques = [b.strip() for b in texto_bruto.split("#") if b.strip()]
     dicc_indicadores = {}
     lista_actividades_poai = []
@@ -210,13 +214,19 @@ def procesar_tablas_estandar(texto_bruto: str):
     def descomponer_linea(l):
         return [p.strip() for p in l.split("|")]
 
+    def obtener_valor(partes, indice, default=""):
+        return partes[indice] if len(partes) > indice and indice >= 0 else default
+
     for bloque in bloques:
-        lineas = bloque.split("\n")
+        lineas = [l for l in bloque.split("\n") if l.strip()]
         if not lineas:
             continue
+        
         encabezado_tabla = lineas[0].lower()
 
-        # TABLA 1
+        # ----------------------------------------------------
+        # TABLA 1: Datos Básicos y Objetivos
+        # ----------------------------------------------------
         if "no.cv" in encabezado_tabla and "objetivo general proyecto" in encabezado_tabla:
             for l in lineas[1:]:
                 partes = descomponer_linea(l)
@@ -224,97 +234,115 @@ def procesar_tablas_estandar(texto_bruto: str):
                     idx = int(partes[0])
                     if idx not in dicc_indicadores:
                         dicc_indicadores[idx] = {}
-                    dicc_indicadores[idx]["No.CV"] = partes[1] if len(partes) > 1 else ""
-                    dicc_indicadores[idx]["Dependencia"] = partes[2] if len(partes) > 2 else ""
-                    dicc_indicadores[idx]["Nombre Proyecto"] = partes[3] if len(partes) > 3 else ""
-                    dicc_indicadores[idx]["Fecha CV"] = partes[4] if len(partes) > 4 else ""
-                    dicc_indicadores[idx]["Objetivo General Proyecto"] = partes[5] if len(partes) > 5 else ""
-                    dicc_indicadores[idx]["Objetivo Específico"] = partes[6] if len(partes) > 6 else ""
+                    
+                    dicc_indicadores[idx]["No.CV"] = obtener_valor(partes, 1)
+                    dicc_indicadores[idx]["Dependencia"] = obtener_valor(partes, 2)
+                    dicc_indicadores[idx]["Nombre Proyecto"] = obtener_valor(partes, 3)
+                    dicc_indicadores[idx]["Fecha CV"] = obtener_valor(partes, 4)
+                    dicc_indicadores[idx]["Objetivo General Proyecto"] = obtener_valor(partes, 5)
+                    dicc_indicadores[idx]["Objetivo Específico"] = obtener_valor(partes, 6)
 
                     if nombre_proyecto_tabla == "No detectado" and len(partes) > 3 and partes[3]:
                         nombre_proyecto_tabla = partes[3]
 
-        # TABLA 2
+        # ----------------------------------------------------
+        # TABLA 2: Alineación Estratégica
+        # ----------------------------------------------------
         elif "sector mga-sap" in encabezado_tabla and "subprograma plan" in encabezado_tabla:
             for l in lineas[1:]:
                 partes = descomponer_linea(l)
                 if partes and partes[0].isdigit():
                     idx = int(partes[0])
-                    if idx in dicc_indicadores:
-                        dicc_indicadores[idx]["Sector MGA-SAP"] = partes[1] if len(partes) > 1 else ""
-                        dicc_indicadores[idx]["Línea Estratégica"] = partes[2] if len(partes) > 2 else ""
-                        dicc_indicadores[idx]["Programa Plan de Desarrollo"] = partes[3] if len(partes) > 3 else ""
-                        dicc_indicadores[idx]["Programa MGA"] = partes[4] if len(partes) > 4 else ""
-                        dicc_indicadores[idx]["Meta de Resultado"] = partes[5] if len(partes) > 5 else ""
-                        dicc_indicadores[idx]["Subprograma Plan"] = partes[6] if len(partes) > 6 else ""
+                    if idx not in dicc_indicadores:
+                        dicc_indicadores[idx] = {}
+                    
+                    dicc_indicadores[idx]["Sector MGA-SAP"] = obtener_valor(partes, 1)
+                    dicc_indicadores[idx]["Línea Estratégica"] = obtener_valor(partes, 2)
+                    dicc_indicadores[idx]["Programa Plan de Desarrollo"] = obtener_valor(partes, 3)
+                    dicc_indicadores[idx]["Programa MGA"] = obtener_valor(partes, 4)
+                    dicc_indicadores[idx]["Meta de Resultado"] = obtener_valor(partes, 5)
+                    dicc_indicadores[idx]["Subprograma Plan"] = obtener_valor(partes, 6)
 
-        # TABLA 3
+        # ----------------------------------------------------
+        # TABLA 3: Metas, Productos e Indicadores
+        # ----------------------------------------------------
         elif "meta producto plan" in encabezado_tabla and "meta total mga" in encabezado_tabla:
             for l in lineas[1:]:
                 partes = descomponer_linea(l)
                 if partes and partes[0].isdigit():
                     idx = int(partes[0])
-                    if idx in dicc_indicadores:
-                        meta_producto_texto = partes[1] if len(partes) > 1 else ""
-                        dicc_indicadores[idx]["Meta Producto Plan"] = meta_producto_texto
+                    if idx not in dicc_indicadores:
+                        dicc_indicadores[idx] = {}
 
-                        match_mp = re.search(r"(MP\d+)", meta_producto_texto)
-                        dicc_indicadores[idx]["Código MP"] = match_mp.group(1) if match_mp else "Sin Código"
+                    meta_producto_texto = obtener_valor(partes, 1)
+                    dicc_indicadores[idx]["Meta Producto Plan"] = meta_producto_texto
 
-                        dicc_indicadores[idx]["P.G. PI"] = partes[2] if len(partes) > 2 else ""
-                        dicc_indicadores[idx]["2024 PI"] = partes[3] if len(partes) > 3 else ""
-                        dicc_indicadores[idx]["2025 PI"] = partes[4] if len(partes) > 4 else ""
-                        dicc_indicadores[idx]["2026 PI"] = partes[5] if len(partes) > 5 else ""
-                        dicc_indicadores[idx]["2027 PI"] = partes[6] if len(partes) > 6 else ""
-                        dicc_indicadores[idx]["Código y Nombre Producto Catalogo - MP"] = partes[7] if len(partes) > 7 else ""
-                        dicc_indicadores[idx]["Indicador de Producto Catalogo - MP"] = partes[8] if len(partes) > 8 else ""
-                        dicc_indicadores[idx]["Unidad de Medida"] = partes[9] if len(partes) > 9 else ""
-                        dicc_indicadores[idx]["Meta Total MGA"] = partes[10] if len(partes) > 10 else ""
-                        dicc_indicadores[idx]["2024 MGA"] = partes[11] if len(partes) > 11 else ""
-                        dicc_indicadores[idx]["2025 MGA"] = partes[12] if len(partes) > 12 else ""
-                        dicc_indicadores[idx]["2026 MGA"] = partes[13] if len(partes) > 13 else ""
-                        dicc_indicadores[idx]["2027 MGA"] = partes[14] if len(partes) > 14 else ""
+                    match_mp = re.search(r"(MP\d+)", meta_producto_texto)
+                    dicc_indicadores[idx]["Código MP"] = match_mp.group(1) if match_mp else "Sin Código"
 
-        # TABLA 4
+                    dicc_indicadores[idx]["P.G. PI"] = obtener_valor(partes, 2)
+                    dicc_indicadores[idx]["2024 PI"] = obtener_valor(partes, 3)
+                    dicc_indicadores[idx]["2025 PI"] = obtener_valor(partes, 4)
+                    dicc_indicadores[idx]["2026 PI"] = obtener_valor(partes, 5)
+                    dicc_indicadores[idx]["2027 PI"] = obtener_valor(partes, 6)
+                    dicc_indicadores[idx]["Código y Nombre Producto Catalogo - MP"] = obtener_valor(partes, 7)
+                    dicc_indicadores[idx]["Indicador de Producto Catalogo - MP"] = obtener_valor(partes, 8)
+                    dicc_indicadores[idx]["Unidad de Medida"] = obtener_valor(partes, 9)
+                    dicc_indicadores[idx]["Meta Total MGA"] = obtener_valor(partes, 10)
+                    dicc_indicadores[idx]["2024 MGA"] = obtener_valor(partes, 11)
+                    dicc_indicadores[idx]["2025 MGA"] = obtener_valor(partes, 12)
+                    dicc_indicadores[idx]["2026 MGA"] = obtener_valor(partes, 13)
+                    dicc_indicadores[idx]["2027 MGA"] = obtener_valor(partes, 14)
+
+        # ----------------------------------------------------
+        # TABLA 4: Observaciones y Tipificación
+        # ----------------------------------------------------
         elif "observación por indicador mga" in encabezado_tabla and "producto cv - mga" in encabezado_tabla:
             for l in lineas[1:]:
                 partes = descomponer_linea(l)
                 if partes and partes[0].isdigit():
                     idx = int(partes[0])
-                    if idx in dicc_indicadores:
-                        dicc_indicadores[idx]["Observación por Indicador MGA - Formulador"] = partes[1] if len(partes) > 1 else ""
-                        dicc_indicadores[idx]["Producto CV - MGA"] = partes[2] if len(partes) > 2 else ""
-                        dicc_indicadores[idx]["Indicador de Producto CV - MGA"] = partes[3] if len(partes) > 3 else ""
-                        dicc_indicadores[idx]["Tipo prod."] = partes[4] if len(partes) > 4 else ""
-                        dicc_indicadores[idx]["Tipo prod2"] = partes[5] if len(partes) > 5 else ""
+                    if idx not in dicc_indicadores:
+                        dicc_indicadores[idx] = {}
 
-        # TABLA 5
-        elif "cod. meta de producto" in encabezado_tabla or "actividad del proyecto" in encabezado_tabla:
-            columnas = [c.strip().lower() for c in lineas[0].split("|") if c.strip()]
-            pos_mp = next((i for i, c in enumerate(columnas) if "cod. meta" in c or "producto" in c), 0)
-            pos_prod = next((i for i, c in enumerate(columnas) if "producto mga" in c), 1)
-            pos_act = next((i for i, c in enumerate(columnas) if "actividad" in c), 2)
-            pos_rec = next((i for i, c in enumerate(columnas) if "recurso total" in c or "total 2027" in c), -1)
+                    dicc_indicadores[idx]["Observación por Indicador MGA - Formulador"] = obtener_valor(partes, 1)
+                    dicc_indicadores[idx]["Producto CV - MGA"] = obtener_valor(partes, 2)
+                    dicc_indicadores[idx]["Indicador de Producto CV - MGA"] = obtener_valor(partes, 3)
+                    dicc_indicadores[idx]["Tipo prod."] = obtener_valor(partes, 4)
+                    dicc_indicadores[idx]["Tipo prod2"] = obtener_valor(partes, 5)
 
+        # ----------------------------------------------------
+        # TABLA 5: Actividades y Presupuesto POAI (DINÁMICA)
+        # ----------------------------------------------------
+        elif any(kw in encabezado_tabla for kw in ["cod. meta", "actividad", "poai", "recurso"]):
+            # Capturamos dinámicamente los nombres reales de las columnas en el Word
+            nombres_columnas = [c.strip() for c in lineas[0].split("|") if c.strip()]
+            
             for l in lineas[1:]:
                 partes = descomponer_linea(l)
                 texto_linea = " ".join(partes).upper()
 
-                if "TOTAL RECURSOS 2027" in texto_linea or "PROYECTO DE INVERSIÓN" in texto_linea:
+                # Identificar fila de totales
+                if "TOTAL" in texto_linea or "PROYECTO DE INVERSIÓN" in texto_linea:
                     recurso_total_proyecto = partes[-1] if partes else "$0"
                     continue
 
-                if len(partes) >= 3 and "FIRMA" not in partes[0].upper() and partes[0] != "":
-                    match_mp_act = re.search(r"(MP\d+)", partes[pos_mp])
-                    actividad = {
-                        "COD. META DE PRODUCTO": partes[pos_mp] if len(partes) > pos_mp else "",
-                        "Código MP Extrayendo": match_mp_act.group(1) if match_mp_act else "Sin Código",
-                        "PRODUCTO MGA (COD+TEXTO)": partes[pos_prod] if len(partes) > pos_prod else "",
-                        "ACTIVIDAD DEL PROYECTO": partes[pos_act] if len(partes) > pos_act else "",
-                        "RECURSO TOTAL 2027": partes[pos_rec] if pos_rec < len(partes) else "$0",
-                    }
+                # Evitar firmas o líneas vacías
+                if len(partes) >= 2 and "FIRMA" not in texto_linea:
+                    actividad = {}
+                    # Asignamos dinámicamente cada celda a su encabezado original
+                    for idx_col, nombre_col in enumerate(nombres_columnas):
+                        actividad[nombre_col] = obtener_valor(partes, idx_col)
+                    
+                    # Extraer código MP para búsquedas futuras
+                    match_mp = re.search(r"(MP\d+)", texto_linea)
+                    actividad["Código MP Extrayendo"] = match_mp.group(1) if match_mp else "Sin Código"
+                    
                     lista_actividades_poai.append(actividad)
 
+    # ----------------------------------------------------
+    # CONSTRUCCIÓN DE DATAFRAMES FINALES
+    # ----------------------------------------------------
     df_indicadores = pd.DataFrame.from_dict(dicc_indicadores, orient="index")
     if not df_indicadores.empty and "Código MP" in df_indicadores.columns:
         cols = list(df_indicadores.columns)
