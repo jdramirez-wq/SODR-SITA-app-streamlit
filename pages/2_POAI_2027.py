@@ -211,6 +211,12 @@ def procesar_tablas_estandar(texto_bruto: str):
     recurso_total_proyecto = "$0"
     nombre_proyecto_tabla = "No detectado"
 
+    def normalizar_texto(texto: str) -> str:
+        """Remueve tildes y convierte a minúsculas para comparaciones seguras."""
+        texto_norm = unicodedata.normalize('NFD', texto)
+        texto_norm = ''.join(c for c in texto_norm if unicodedata.category(c) != 'Mn')
+        return texto_norm.lower().strip()
+
     def descomponer_linea(l):
         return [p.strip() for p in l.split("|")]
 
@@ -222,12 +228,16 @@ def procesar_tablas_estandar(texto_bruto: str):
         if not lineas:
             continue
         
-        encabezado_tabla = lineas[0].lower()
+        encabezado_bruto = lineas[0]
+        encabezado_norm = normalizar_texto(encabezado_bruto)
+        
+        # Unimos las primeras líneas para detección alternativa si el encabezado tiene saltos
+        contexto_bloque = normalizar_texto(" ".join(lineas[:3]))
 
         # ----------------------------------------------------
         # TABLA 1: Datos Básicos y Objetivos
         # ----------------------------------------------------
-        if "no.cv" in encabezado_tabla and "objetivo general proyecto" in encabezado_tabla:
+        if "no.cv" in encabezado_norm and "objetivo general proyecto" in encabezado_norm:
             for l in lineas[1:]:
                 partes = descomponer_linea(l)
                 if partes and partes[0].isdigit():
@@ -248,7 +258,7 @@ def procesar_tablas_estandar(texto_bruto: str):
         # ----------------------------------------------------
         # TABLA 2: Alineación Estratégica
         # ----------------------------------------------------
-        elif "sector mga-sap" in encabezado_tabla and "subprograma plan" in encabezado_tabla:
+        elif "sector mga-sap" in encabezado_norm and "subprograma plan" in encabezado_norm:
             for l in lineas[1:]:
                 partes = descomponer_linea(l)
                 if partes and partes[0].isdigit():
@@ -266,7 +276,7 @@ def procesar_tablas_estandar(texto_bruto: str):
         # ----------------------------------------------------
         # TABLA 3: Metas, Productos e Indicadores
         # ----------------------------------------------------
-        elif "meta producto plan" in encabezado_tabla and "meta total mga" in encabezado_tabla:
+        elif "meta producto plan" in encabezado_norm and "meta total mga" in encabezado_norm:
             for l in lineas[1:]:
                 partes = descomponer_linea(l)
                 if partes and partes[0].isdigit():
@@ -297,7 +307,7 @@ def procesar_tablas_estandar(texto_bruto: str):
         # ----------------------------------------------------
         # TABLA 4: Observaciones y Tipificación
         # ----------------------------------------------------
-        elif "observación por indicador mga" in encabezado_tabla and "producto cv - mga" in encabezado_tabla:
+        elif "observacion por indicador mga" in encabezado_norm and "producto cv - mga" in encabezado_norm:
             for l in lineas[1:]:
                 partes = descomponer_linea(l)
                 if partes and partes[0].isdigit():
@@ -312,34 +322,47 @@ def procesar_tablas_estandar(texto_bruto: str):
                     dicc_indicadores[idx]["Tipo prod2"] = obtener_valor(partes, 5)
 
         # ----------------------------------------------------
-        # TABLA 5: Actividades y Presupuesto POAI (DINÁMICA)
+        # TABLA 5: Actividades y Presupuesto POAI (ALTA DETECCIÓN)
         # ----------------------------------------------------
-        elif any(kw in encabezado_tabla for kw in ["cod. meta", "actividad", "poai", "recurso"]):
-            # Capturamos dinámicamente los nombres reales de las columnas en el Word
+        elif any(kw in encabezado_norm or kw in contexto_bloque for kw in ["cod", "meta", "actividad", "poai", "recurso", "presupuesto"]):
+            # Extraemos los nombres exactos de las columnas desde la primera línea del bloque
             nombres_columnas = [c.strip() for c in lineas[0].split("|") if c.strip()]
             
             for l in lineas[1:]:
                 partes = descomponer_linea(l)
                 texto_linea = " ".join(partes).upper()
+                texto_norm_linea = normalizar_texto(texto_linea)
 
-                # Identificar fila de totales
-                if "TOTAL" in texto_linea or "PROYECTO DE INVERSIÓN" in texto_linea:
+                # Detección de fila de Totales / Resumen Financiero
+                if "TOTAL" in texto_linea or "PROYECTO DE INVERSION" in texto_norm_linea:
                     recurso_total_proyecto = partes[-1] if partes else "$0"
                     continue
 
-                # Evitar firmas o líneas vacías
+                # Filtrar firmas o líneas vacías/incompletas
                 if len(partes) >= 2 and "FIRMA" not in texto_linea:
                     actividad = {}
-                    # Asignamos dinámicamente cada celda a su encabezado original
                     for idx_col, nombre_col in enumerate(nombres_columnas):
                         actividad[nombre_col] = obtener_valor(partes, idx_col)
                     
-                    # Extraer código MP para búsquedas futuras
+                    # Extrae 'MP' seguido de números para cruces de información
                     match_mp = re.search(r"(MP\d+)", texto_linea)
                     actividad["Código MP Extrayendo"] = match_mp.group(1) if match_mp else "Sin Código"
                     
                     lista_actividades_poai.append(actividad)
 
+    # ----------------------------------------------------
+    # CONSTRUCCIÓN Y SALIDA DE DATAFRAMES
+    # ----------------------------------------------------
+    df_indicadores = pd.DataFrame.from_dict(dicc_indicadores, orient="index")
+    if not df_indicadores.empty and "Código MP" in df_indicadores.columns:
+        cols = list(df_indicadores.columns)
+        cols.insert(0, cols.pop(cols.index("Código MP")))
+        df_indicadores = df_indicadores[cols]
+
+    df_poai = pd.DataFrame(lista_actividades_poai)
+    return df_indicadores, df_poai, recurso_total_proyecto, nombre_proyecto_tabla
+
+    
     # ----------------------------------------------------
     # CONSTRUCCIÓN DE DATAFRAMES FINALES
     # ----------------------------------------------------
