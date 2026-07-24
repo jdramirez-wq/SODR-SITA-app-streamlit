@@ -1,6 +1,7 @@
 import re
 import xml.etree.ElementTree as ET
 import docx
+import unicodedata
 import pandas as pd
 import streamlit as st
 
