@@ -978,40 +978,14 @@ CRITERIOS DE EVALUACIÓN:
 - Si la contribución del proyecto no es igual al 100% de lo programado en la vigencia, debe especificar si existen otros proyectos complementarios y cuánto aportan.
 - Debe concluir si es necesario reprogramar la meta. En caso de no requerirlo (a pesar de haber brechas), debe existir una justificación técnica contundente de por qué no se reprograma.
 - Justificación Financiera: Debe presentar la trazabilidad financiera indicando: Meta -> Producto -> Actividades -> Valores asignados. Si el proyecto desglosa las tareas que componen cada actividad, estas deben estar costeadas y justificadas aquí.
-
-3.2. Estructura Tripartita de Justificaciones (Obligatorio):
-- Toda justificación debe contener tres secciones redactadas como texto cohesionado y narrativo.
-- A. Justificación Jurídico-Administrativa:
-  Debe usar OBLIGATORIAMENTE este texto base (y complementar solo si es estrictamente necesario):
-  "La presente solicitud de modificación presupuestal se fundamenta en la Ley 152 de 1994 (Ley Orgánica del Plan de Desarrollo), que establece los principios de planeación estratégica, coordinación y flexibilidad; en el Decreto 111 de 1996 (Estatuto Orgánico del Presupuesto), que regula las modificaciones presupuestales; y en el Decreto Departamental 1-17-1278 de 2023, que reglamenta el Banco de Programas y Proyectos del Valle del Cauca. Adicionalmente, se acoge el CONPES 3751 de 2013 y el Decreto 1082 de 2015 (modificado por Decreto 2104 de 2023), la ley 819 citando los artículos específicos que permiten la adición, vigencia futura o reducción como referentes del sistema de inversión pública. Ley 2200 DE 2022, que establece la función de la asamblea, de estudiar las adiciones, reducciones y vigencias futuras, así como la Sentencia C-036 de 2023 Corte Constitucional de Colombia donde se establece que la asamblea debe estudiar estas solicitudes, para cambio de presupuesto de subprogramas o modificaciones de recursos propios, ya que los de la nación se realizan de acuerdo a la ley y no se presentan a la Asamblea, tampoco traslados internos entre actividades de un mismo proyecto, ni entre proyectos de un mismo subprograma. La modificación se tramita bajo los lineamientos del SUIP-PIIP."
-  (Añadir al final si el trámite lo amerita: "... y requiere aprobación de la Asamblea Departamental conforme a sus competencias constitucionales.")
-  *Regla Especial para Vigencias Futuras (VF):* Exigir demostración contundente de necesidad estratégica (no solo conveniencia). Verificar reglas de VFO (15% apropiación), VFE (Sectores Ley 1483/2011, doble registro) o VFC (contratos en ejecución, soportes).
-- B. Justificación Técnica:
-  PROHIBIDO: Usar "para contratar personal" como justificación (excepto nómina docente SED).
-  OBLIGATORIO: Explicar cómo impacta el cumplimiento de la meta (con código de la MP) y el avance actual/proyectado. Para contracréditos, explicar por qué reducir el recurso no afecta la meta original.
-- C. Justificación Financiera y Distribución por Actividad:
-  Verificación aritmética estricta. Trazabilidad explícita de recursos.
-  Formato exigido por actividad: MP [código] / Producto MGA [código] / PI[código]/.../XX "[nombre]" / Fuente: [código] / Valor inicial: $ / Modificación (– / +): $ / Valor final: $
-
-REGLA ESPECIAL PARA PROYECTOS FINANCIADOS CON REGALÍAS (SGR):
-Si el proyecto indica que su fuente de financiación es el Sistema General de Regalías (SGR), omite las reglas de recursos propios y aplica estrictamente las siguientes directrices:
-- Justificación Jurídica: Debe citar OBLIGATORIAMENTE la normatividad de Regalías (Ley 2056 de 2020) y el Decreto 1821 de 2020, omitiendo los Decretos de modificaciones presupuestales de recursos propios.
-- Justificación Técnica (Alineación Estratégica): Debe validar expresamente la alineación con el Plan Indicativo SGR. OBLIGATORIO: Verifica que el documento técnico justifique a qué Iniciativa específica, Programa y Línea Estratégica del Plan Indicativo SGR apunta el proyecto, así como las metas de producto asociadas.
-- Checklist Estricto de Soportes para SGR: Verifica y confirma explícitamente que se acompañen los siguientes anexos: Cadena de Valor (Word/PDF), MGA exportada en formato PDF, Presupuesto detallado, Archivo Excel de registro eVaplan, Oficio aclaratorio / remisorio firmado en PDF.
-- Redacción del Visto Bueno (Excepción SGR): Debes redactar un "Visto Bueno de Alineación Estratégica y Programática". En la redacción debes mencionar explícitamente la Iniciativa específica del SGR identificada en los documentos. Además, incluye obligatoriamente la siguiente salvedad: "Teniendo en cuenta que este proyecto ya cuenta con la viabilidad sectorial del nivel central (Ministerio / OCAD), la presente revisión se suscribe únicamente a la alineación con el Plan de Desarrollo Departamental, dejando la salvedad expresa de que es responsabilidad exclusiva de la entidad ejecutora entregar las certificaciones respectivas e informes periódicos que evidencien el aporte efectivo a las metas de producto".
-
-4. Conclusión de Radicación y Revisión Estricta de Soportes
-- Concepto de Radicación: Concluye de manera clara por qué se debe aprobar la radicación del proyecto nuevo.
-- Origen presupuestal: Especifica si el proyecto nace con recursos de la vigencia, si requiere una adición presupuestal, un crédito, etc.
-- Checklist de Soportes Obligatorios: Confirma que el documento hace referencia o cuenta con los anexos obligatorios para la radicación: Documento MGA (solo radicación inicial o actualización POAI), Presupuesto detallado, Certificados de control previo.
+- Checklist de Soportes Obligatorios: Confirma que el documento hace referencia o cuenta con los anexos obligatorios para la radicación: Documento MGA (solo radicación inicial o actualización POAI), Presupuesto detallado
 
 FORMATO DE SALIDA ESPERADO:
 - Entrega tu revisión utilizando viñetas y separando el análisis por cada uno de los 4 bloques mencionados.
 - Usa negritas para resaltar las [Aprobaciones] o los [Hallazgos/Errores] encontrados.
 - Debes redactar el Visto Bueno respetando las siguientes pautas:
-  * En caso de ir a Asamblea: debes empezar aclarando que es un visto bueno administrativo (la aprobación la debe hacer la Asamblea).
-  * Si es por Decreto: indicarlo directamente.
-  * Estructura del Visto Bueno: indicar el trámite, el valor, la fuente, la meta de producto asociada (código y descripción), justificación evaluada, breve resumen de la importancia del trámite y su aporte al Plan de Desarrollo, y los documentos soporte.
+  
+  * Estructura del Visto Bueno: indicar el trámite, el valor, la fuente, la meta de producto asociada (código y descripción),breve resumen de la importancia del trámite y su aporte al Plan de Desarrollo, y los documentos soporte.
   * Conclusión obligatoria: debe incluir la salvedad de que "es responsabilidad de la dependencia [Nombre Dependencia] realizar los trámites respectivos para culminar el trámite y su correcta ejecución, y que el visto bueno otorgado por la Subdirección de Ordenamiento y Desarrollo Regional se suscribe a verificar la correcta alineación de la cadena de valor del Plan de Desarrollo con la cadena de valor del proyecto, y su contribución a la implementación del Plan de Desarrollo"."""
 
     # 📋 Paso 1: Bloque de copiado rápido
