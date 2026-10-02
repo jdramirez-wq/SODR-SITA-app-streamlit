@@ -19,6 +19,7 @@ from src.evaplan import pipeline, reportes
 from src.evaplan.lectura import EsquemaError
 from src.evaplan.prompts import PERIODOS, generar_prompt_sistema
 from src.evaplan.seguimiento import ETIQUETAS
+from src.evaplan.version import version_codigo
 
 st.set_page_config(page_title="Seguimiento EVAPLAN", page_icon="📊", layout="wide")
 st.markdown(
@@ -65,6 +66,7 @@ con_hechos = st.sidebar.checkbox("Incluir 'hechos verificados' en el prompt", va
 url_drive = _url_drive()
 st.sidebar.markdown("**Plan Indicativo (Drive)**")
 st.sidebar.write("✅ Conectado por enlace" if url_drive else "⚠️ Sin enlace configurado (secreto `URL_DRIVE_PLAN_INDICATIVO`)")
+st.sidebar.caption(f"Versión del código: {version_codigo()}")
 
 # ------------------------------------------------------------------ carga de archivos
 c1, c2, c3 = st.columns(3)
