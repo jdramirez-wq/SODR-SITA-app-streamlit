@@ -1,4 +1,5 @@
 """Prueba de humo: la página de seguimiento carga sin archivos y no lanza excepciones."""
+import sys
 from pathlib import Path
 
 from streamlit.testing.v1 import AppTest
@@ -15,4 +16,13 @@ def test_pagina_de_seguimiento_carga_sin_archivos():
 
 def test_portada_carga():
     at = AppTest.from_file(str(RAIZ / "app.py"), default_timeout=30).run()
+    assert not at.exception
+
+
+def test_la_pagina_funciona_aunque_la_raiz_del_repo_no_este_en_sys_path(monkeypatch):
+    """Caso real: con la página como archivo principal, Streamlit Cloud falló con "No module named 'src'"."""
+    monkeypatch.setattr(sys, "path", [p for p in sys.path if Path(p or ".").resolve() != RAIZ])
+    for nombre in [m for m in sys.modules if m == "src" or m.startswith("src.")]:
+        monkeypatch.delitem(sys.modules, nombre)
+    at = AppTest.from_file(str(RAIZ / "pages" / "1_Auditoria_EVAPLAN.py"), default_timeout=30).run()
     assert not at.exception

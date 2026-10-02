@@ -76,4 +76,5 @@ mostrar 5 metas, 1 sin reporte y 3 con alertas.
 | "⚠️ Sin enlace configurado" | Falta el secreto, o la app no se reinició tras guardarlo |
 | "No se pudo leer Drive (HTTPError 4xx)" | El libro no es público o el ID está mal copiado |
 | "Un archivo no tiene la estructura esperada" | Se subió un archivo en el cuadro equivocado, o EVAPLAN cambió columnas |
+| `ModuleNotFoundError: No module named 'src'` | La página se ejecutó como archivo principal. Ya está corregido en el código; además, **Main file path debe ser `app.py`** |
 | Aviso de `use_container_width` en los registros | Inofensivo: función obsoleta que aún funciona; está en la hoja de ruta |

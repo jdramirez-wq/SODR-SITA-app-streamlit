@@ -4,10 +4,16 @@ La lógica vive en src/evaplan (probada con archivos de ejemplo). Esta página s
 """
 import io
 import os
+import sys
 import urllib.request
+from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+
+# Raíz del repositorio en sys.path: así `from src...` funciona aunque Streamlit se lance con esta página como
+# archivo principal o desde otra carpeta (si no, falla con "No module named 'src'").
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from src.evaplan import pipeline, reportes
 from src.evaplan.lectura import EsquemaError
