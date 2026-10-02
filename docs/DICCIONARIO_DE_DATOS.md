@@ -124,14 +124,16 @@ Actividades de proyectos de inversión de UNA entidad, con presupuesto y avance 
 
 - **Origen:** Descarga de EVAPLAN: 'Centralizadas.xlsx'
 - **Hoja:** primera hoja · **Encabezados en la fila:** 2
-- **Llave:** `codigo_actividad`
+- **Llave:** `id_registro`
 - **Lector:** `leer_centralizadas()`
 
 > Fila 1 es un título ('EvaPlan'); los encabezados están en la fila 2.
+> Cada fila es un REGISTRO presupuestal (llave: `ID`), no una actividad: la misma actividad aparece en varias filas cuando tiene varios registros. Los presupuestos se suman; el avance se promedia por registro.
+> Solo trae los proyectos de los que la dependencia es centro gestor (módulo PA): pueden aportar a metas coordinadas por OTRA dependencia, y las metas propias pueden recibir aportes de proyectos ajenos.
 
 | # | Encabezado original | Campo canónico | Tipo | ¿Vacío? | Descripción | Notas |
 |---|---|---|---|---|---|---|
-| 1 | `ID` | `id_registro` | codigo | no | Identificador interno de EVAPLAN. |  |
+| 1 | `ID` | `id_registro` | codigo | no | Identificador único del REGISTRO presupuestal en EVAPLAN (llave de la tabla). |  |
 | 2 | `Cod.Entidad` | `codigo_entidad` | codigo | no | Código de la entidad. |  |
 | 3 | `Nombre.Entidad` | `nombre_entidad` | texto | no | Nombre ABREVIADO y con caracteres perdidos. | No usar como llave: 'SRIA DE EJEMPLO  DE LA INFORM' (faltan tildes). |
 | 4 | `Cód. Proyecto` | `codigo_proyecto` | codigo | no | Código del proyecto de inversión ('PI99-000001'). |  |
@@ -139,11 +141,11 @@ Actividades de proyectos de inversión de UNA entidad, con presupuesto y avance 
 | 6 | `Cód. BPIN` | `bpin` | codigo | no | Código BPIN (13 dígitos). Un proyecto tiene un solo BPIN. |  |
 | 7 | `Cód. MP` | `codigo_mp` | codigo | no | Meta de producto a la que contribuye la actividad. |  |
 | 8 | `Descripción MP` | `descripcion_mp` | texto | no | Texto de la meta de producto. |  |
-| 9 | `Cód.Producto MGA` | `codigo_producto_mga` | codigo | no | Producto MGA (7 dígitos). | Siempre igual a los últimos 7 caracteres del código MP. |
+| 9 | `Cód.Producto MGA` | `codigo_producto_mga` | codigo | no | Producto MGA (7 dígitos). | Casi siempre igual a los últimos 7 caracteres del código MP (en datos reales hay casos con 1 dígito de diferencia). |
 | 10 | `Producto MGA` | `producto_mga` | texto | no | Nombre del producto MGA. |  |
 | 11 | `Cod.Indicador Producto MGA` | `codigo_indicador_producto_mga` | codigo | no | Indicador de producto MGA (9 dígitos). | Normalmente producto + '00', no siempre. |
 | 12 | `Indicador Producto MGA` | `indicador_producto_mga` | texto | no | Nombre del indicador de producto. |  |
-| 13 | `Cód. Actividad` | `codigo_actividad` | codigo | no | Código de la actividad: '<proyecto>/a/b/cc/dd' (5 partes separadas por '/'). | Empieza siempre por el código del proyecto. |
+| 13 | `Cód. Actividad` | `codigo_actividad` | codigo | no | Código de la actividad: '<proyecto>/a/b/cc/dd' (5 partes separadas por '/'). | Empieza siempre por el código del proyecto. NO es único: una actividad puede tener varios registros (distinto ID, presupuesto y, a veces, estado, avance y observación). |
 | 14 | `Nombre Actividad` | `nombre_actividad` | texto | no | Nombre de la actividad. |  |
 | 15 | `Cód. Fondo` | `codigo_fondo` | codigo | no | Código de la fuente de financiación. |  |
 | 16 | `Nombre Fondo` | `nombre_fondo` | texto | no | Nombre de la fuente de financiación. |  |

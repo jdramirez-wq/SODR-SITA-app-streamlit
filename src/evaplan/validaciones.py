@@ -65,7 +65,7 @@ def codigo_mp_coherente(df: pd.DataFrame, fuente: str) -> pd.DataFrame:
                         f"subprograma {r['subprograma_codigo']} ≠ {r['subprograma_mp']} del código", r["fila_excel"]))
         if "codigo_producto_mga" in df.columns and not _na(r["codigo_producto_mga"]) \
                 and r["codigo_producto_mga"] != r["producto_mga_mp"]:
-            h.append(_h("codigo_mp_vs_producto_mga", "error", fuente, mp,
+            h.append(_h("codigo_mp_vs_producto_mga", "advertencia", fuente, mp,
                         f"producto MGA {r['codigo_producto_mga']} ≠ {r['producto_mga_mp']} del código", r["fila_excel"]))
     return _como_df(h)
 
@@ -98,12 +98,13 @@ def cobertura_evaplan_vs_drive(pi_evaplan: pd.DataFrame, pi_drive: pd.DataFrame)
 
 def cobertura_centralizadas_vs_pi(centralizadas: pd.DataFrame, pi: pd.DataFrame) -> pd.DataFrame:
     en_ce, en_pi = set(centralizadas["codigo_mp"]), set(pi["codigo_mp"])
-    h = [_h("actividad_sin_meta_en_pi", "error", "centralizadas", mp,
-            "Hay actividades para una meta que no está en el Plan Indicativo",
+    h = [_h("actividad_sin_meta_en_pi", "advertencia", "centralizadas", mp,
+            "Hay actividades para una meta que no está en el export del Plan Indicativo (¿meta coordinada por OTRA "
+            "dependencia? Esa dependencia debe recibir el avance de este proyecto)",
             int(centralizadas.loc[centralizadas["codigo_mp"] == mp, "fila_excel"].iloc[0]))
          for mp in sorted(en_ce - en_pi)]
     h += [_h("meta_sin_actividades", "info", "pi_mp_evaplan", mp,
-             "La meta no tiene actividades en Centralizadas (¿se ejecuta por otra vía o falta registrar?)",
+             "La meta no tiene actividades en Centralizadas de esta dependencia (¿la ejecuta un proyecto de otra dependencia?)",
              int(pi.loc[pi["codigo_mp"] == mp, "fila_excel"].iloc[0]))
           for mp in sorted(en_pi - en_ce)]
     return _como_df(h)
@@ -190,7 +191,7 @@ def avance_consistente(ce: pd.DataFrame) -> pd.DataFrame:
         k, f = r["codigo_actividad"], r["fila_excel"]
         prog, ejec, pct = r["cant_programada_vigencia"], r["cant_ejecutada_vigencia"], r["avance_actividad_pct"]
         if _na(prog) or prog == 0:
-            h.append(_h("programacion_cero", "advertencia", "centralizadas", k, "cantidad programada nula o 0", f))
+            h.append(_h("sin_programacion_fisica", "info", "centralizadas", k, "sin cantidad programada en la vigencia: no hay avance físico que medir", f))
             continue
         calc = (0.0 if _na(ejec) else ejec) / prog * 100
         if not _na(pct) and abs(calc - pct) > 0.01:
@@ -202,13 +203,21 @@ def avance_consistente(ce: pd.DataFrame) -> pd.DataFrame:
 
 
 def ejecucion_financiera_vs_fisica(ce: pd.DataFrame) -> pd.DataFrame:
+    """Registros con obligaciones y sin avance físico. Solo cuenta si la actividad tiene cantidad programada en la
+    vigencia; si la Observación lo explica (p. ej. 'el entregable es en octubre') baja a informativo."""
     h = []
     for _, r in ce.iterrows():
         k, f, obl = r["codigo_actividad"], r["fila_excel"], r["ppto_obligaciones"]
         sin_avance = _na(r["avance_actividad_pct"]) or r["avance_actividad_pct"] == 0
-        if not _na(obl) and obl > 0 and sin_avance:
-            h.append(_h("financiero_sin_fisico", "advertencia", "centralizadas", k,
-                        f"obligaciones {_fmt(obl)} sin avance físico reportado", f))
+        programada = not _na(r["cant_programada_vigencia"]) and r["cant_programada_vigencia"] > 0
+        if not _na(obl) and obl > 0 and sin_avance and programada:
+            if _na(r["observacion"]):
+                h.append(_h("financiero_sin_fisico", "advertencia", "centralizadas", k,
+                            f"obligaciones {_fmt(obl)} sin avance físico y sin observación que lo explique", f))
+            else:
+                h.append(_h("financiero_sin_fisico_con_observacion", "info", "centralizadas", k,
+                            f"obligaciones {_fmt(obl)} sin avance físico; la observación lo explica: "
+                            f"«{str(r['observacion'])[:80]}»", f))
         con = str(r["estado_actividad"]).upper().startswith("CON")
         if not _na(obl) and ((obl > 0) != con) and not _na(r["estado_actividad"]):
             h.append(_h("estado_vs_obligaciones", "advertencia", "centralizadas", k,
@@ -295,13 +304,19 @@ def validar_todo(pi_mp_evaplan: pd.DataFrame | None = None, pi_mr_evaplan: pd.Da
     if drive_mr is not None and vigencia:
         r.append(marca_logro_vs_vigencia(drive_mr, "pi_drive_mr", vigencia))
     if centralizadas is not None:
-        r += [llave_unica(centralizadas, "codigo_actividad", "centralizadas"),
+        r += [llave_unica(centralizadas, "id_registro", "centralizadas"),
               codigo_mp_coherente(centralizadas, "centralizadas"), presupuesto_invariantes(centralizadas),
               avance_consistente(centralizadas), ejecucion_financiera_vs_fisica(centralizadas),
               integridad_centralizadas(centralizadas)]
     if drive_mp is not None:
-        r += [llave_unica(drive_mp, "codigo_mp", "pi_drive_mp"), codigo_mp_coherente(drive_mp, "pi_drive_mp"),
-              pg_vs_anios(drive_mp, "pi_drive_mp", prefijo="pi")]
+        # El libro de Drive trae TODAS las entidades: se revisan solo las de los archivos cargados (si los hay).
+        entidades = set()
+        for df in (pi_mp_evaplan, centralizadas):
+            if df is not None and "codigo_entidad" in df.columns:
+                entidades |= set(df["codigo_entidad"].dropna())
+        propio = drive_mp[drive_mp["entidad_codigo"].isin(entidades)] if entidades else drive_mp
+        r += [llave_unica(propio, "codigo_mp", "pi_drive_mp"), codigo_mp_coherente(propio, "pi_drive_mp"),
+              pg_vs_anios(propio, "pi_drive_mp", prefijo="pi")]
         if vigencia:
             r.append(marca_logro_vs_vigencia(drive_mp, "pi_drive_mp", vigencia))
         if pi_mp_evaplan is not None:

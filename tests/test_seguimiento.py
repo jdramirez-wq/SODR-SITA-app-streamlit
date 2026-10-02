@@ -80,7 +80,9 @@ def test_hallazgos_sembrados(matriz, datos):
     assert ("sin_reporte", "MP9900202039902003") in pares
     assert ("sin_plan_de_accion", "MP9900202019902001") in pares
     assert ("actividades_con_obligaciones_sin_avance", "MP9900202029902002") in pares
-    assert ("narrativa_con_resultado_cero", "MP9900202019902001") in pares
+    assert ("narrativa_con_resultado_cero", "MP9900202019902001") not in pares      # regla retirada: cada dependencia
+    # justifica el avance 0 en Análisis o en Dificultades; esta meta tiene ambos
+    assert not {r for r, _ in pares} & {"avance_cero_sin_justificacion", "ejecucion_sin_avance_sin_explicacion"}
 
 
 def test_avance_sin_obligaciones_exige_justificar_gestion(datos):
@@ -149,3 +151,79 @@ def test_proyeccion_menor_que_el_resultado_es_incoherente_en_acumulados(datos):
     pi.loc[pi["codigo_mp"] == "MP9900101019901001", "valor_proyectado"] = 5.0     # resultado ya es 12
     h = S.detectar_hallazgos(S.construir_matriz(pi, ce, dr))
     assert ("proyeccion_menor_que_resultado", "MP9900101019901001") in set(zip(h["regla"], h["llave"]))
+
+
+def test_actividad_con_varios_registros_cuenta_una_vez_como_actividad(matriz):
+    f = matriz.loc["MP9900202029902002"]
+    assert f["n_registros"] == 3 and f["n_actividades"] == 2
+    assert f["ppto_definitivo"] == 1_100_000_000                    # los presupuestos de los registros se suman
+
+
+def _hallazgos(datos, ce=None, pi=None):
+    p, c, d = datos
+    return S.detectar_hallazgos(S.construir_matriz(p if pi is None else pi, c if ce is None else ce, d))
+
+
+def test_obligaciones_sin_avance_bajan_a_info_si_la_observacion_lo_explica(datos):
+    _, ce, _ = datos
+    ce = ce.copy()
+    ce.loc[ce["codigo_mp"] == "MP9900202029902002", "observacion"] = "El entregable está para el mes de noviembre."
+    h = _hallazgos(datos, ce=ce)
+    reglas = set(zip(h["regla"], h["severidad"], h["llave"]))
+    assert ("actividades_sin_avance_con_observacion", "info", "MP9900202029902002") in reglas
+    assert "actividades_con_obligaciones_sin_avance" not in set(h["regla"])
+
+
+def test_registro_sin_cantidad_programada_no_genera_alerta_de_avance(datos):
+    from src.evaplan import validaciones as V
+    _, ce, _ = datos
+    ce = ce.copy()
+    ce["cant_programada_vigencia"] = pd.NA
+    assert "financiero_sin_fisico" not in set(V.ejecucion_financiera_vs_fisica(ce)["regla"])
+
+
+@pytest.mark.parametrize("analisis, dificultades, alerta", [
+    (None, None, True),                       # sin ninguna justificación
+    ("Se explica en el análisis", None, False),     # como lo hace una dependencia
+    (None, "Etapa precontractual", False),          # como lo hace otra
+])
+def test_resultado_cero_exige_justificacion_en_analisis_o_dificultades(datos, analisis, dificultades, alerta):
+    pi, ce, dr = datos
+    pi = pi.copy()
+    i = pi.index[pi["codigo_mp"] == "MP9900202019902001"][0]          # resultado 0, sin plan de acción
+    pi.loc[i, ["analisis_logro", "dificultades_gestiones", "principal_logro"]] = [analisis, dificultades, pd.NA]
+    h = S.detectar_hallazgos(S.construir_matriz(pi, ce, dr))
+    assert ("avance_cero_sin_justificacion" in set(h["regla"])) is alerta
+
+
+def test_resultado_cero_con_obligaciones_y_sin_justificacion_usa_la_regla_especifica(datos):
+    pi, ce, dr = datos
+    pi = pi.copy()
+    i = pi.index[pi["codigo_mp"] == "MP9900101019901001"][0]
+    pi.loc[i, ["resultado", "analisis_logro", "dificultades_gestiones", "principal_logro"]] = [0.0, pd.NA, pd.NA, pd.NA]
+    h = S.detectar_hallazgos(S.construir_matriz(pi, ce, dr))
+    reglas = set(h[h["llave"] == "MP9900101019901001"]["regla"])
+    assert "ejecucion_sin_avance_sin_explicacion" in reglas and "avance_cero_sin_justificacion" not in reglas
+
+
+def test_si_la_meta_del_export_difiere_de_drive_se_usa_drive_y_se_avisa(datos):
+    pi, ce, dr = datos
+    pi = pi.copy()
+    pi.loc[pi["codigo_mp"] == "MP9900101019901001", "valor_2026"] = 20.0          # Drive dice 30
+    m = S.construir_matriz(pi, ce, dr).set_index("codigo_mp")
+    f = m.loc["MP9900101019901001"]
+    assert f["meta_vigencia"] == 30 and f["meta_vigencia_export"] == 20
+    assert f["pct_avance_vigencia"] == pytest.approx(12 / 30)                     # calcula con la de Drive
+    h = S.detectar_hallazgos(m.reset_index())
+    d = h[h["regla"] == "meta_vigencia_difiere_del_export"]
+    assert d["llave"].tolist() == ["MP9900101019901001"] and "20" in d.iloc[0]["detalle"] and "30" in d.iloc[0]["detalle"]
+
+
+def test_toda_regla_emitida_tiene_nombre_legible(datos):
+    from src.evaplan import validaciones as V
+    from src.evaplan.reglas import ETIQUETAS_REGLAS, etiquetar
+    pi, ce, dr = datos
+    r = pipeline.ejecutar(PI, CE, DR)
+    emitidas = set(r.hallazgos["regla"]) | set(r.calidad["regla"])
+    assert emitidas <= set(ETIQUETAS_REGLAS), emitidas - set(ETIQUETAS_REGLAS)
+    assert "hallazgo" in etiquetar(r.hallazgos).columns and V is not None

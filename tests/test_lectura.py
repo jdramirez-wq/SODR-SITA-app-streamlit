@@ -53,12 +53,12 @@ def test_marcadores_vacio_y_columnas_ignoradas(pi):
 
 
 def test_centralizadas_dinero_y_codigos(ce):
-    assert len(ce) == 5
+    assert len(ce) == 6
     fila = ce.iloc[0]
     assert fila["ppto_inicial"] == 2_000_000_000 and fila["ppto_obligaciones"] == 1_500_000_000
     assert ce.loc[1, "ppto_obligaciones"] == 0                  # entero 0 mezclado con texto
     assert fila["bpin"] == "2024009990001" and fila["codigo_producto_mga"] == "9901001"
-    assert ce["observacion"].isna().sum() == 4                  # '.' = vacío
+    assert ce["observacion"].isna().sum() == 5                  # '.' = vacío
     assert ce["ppto_gestion"].isna().all()
     assert (ce["producto_mga_mp"] == ce["codigo_producto_mga"]).all()
 
@@ -125,3 +125,9 @@ def test_drive_marca_de_logro_por_ano(drive_mp, drive_mr):
     assert drive_mp[["valor_2024_logro", "valor_2025_logro", "valor_2026_logro", "valor_2027_logro"]].iloc[0].tolist() \
         == [True, True, False, False]
     assert drive_mr["valor_2025_logro"].iloc[0] is not None and not drive_mr["valor_2025_logro"].any()
+
+
+def test_centralizadas_la_actividad_puede_repetirse_pero_el_id_es_unico(ce):
+    """Dato real: una actividad aparece en varias filas (registros presupuestales) con distinto ID."""
+    assert ce["id_registro"].is_unique
+    assert ce["codigo_actividad"].duplicated().sum() == 1 and ce["codigo_actividad"].nunique() == 5

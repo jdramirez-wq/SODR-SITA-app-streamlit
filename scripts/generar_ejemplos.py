@@ -49,6 +49,9 @@ ACTIVIDADES = [
      "Contratar consultoría", "900.000.000", "900.000.000", "450.000.000", "450.000.000", "CON EJECUCION", 4, None, 0.0, "."),
     ("PI99-000002", 2024009990002, "Proyecto de ejemplo dos", "MP9900202029902002", "PI99-000002/1/1/01/02",
      "Publicar documentos", "100.000.000", "100.000.000", 0, "100.000.000", "SIN EJECUCION", 6, None, 0.0, "."),
+    # La MISMA actividad con un segundo registro presupuestal (ID distinto), como pasa en los datos reales.
+    ("PI99-000002", 2024009990002, "Proyecto de ejemplo dos", "MP9900202029902002", "PI99-000002/1/1/01/01",
+     "Contratar consultoría", "100.000.000", "100.000.000", 0, "100.000.000", "SIN EJECUCION", 4, None, 0.0, "."),
 ]
 
 

@@ -105,3 +105,37 @@ def test_marca_logro_detecta_inconsistencias(fuentes):
     assert h["regla"].tolist() == ["vigencia_cerrada_sin_marca_logro"] and h["llave"].tolist() == ["2026"]
     h = V.marca_logro_vs_vigencia(mp, "x", 2025)                  # 2025 marcado pero aún no cerrada
     assert h["regla"].tolist() == ["vigencia_abierta_con_marca_logro"]
+
+
+def test_la_llave_de_centralizadas_es_el_id_del_registro_no_el_codigo_de_actividad(fuentes):
+    ce = fuentes["centralizadas"]
+    assert ce["codigo_actividad"].duplicated().any()                    # una actividad con 2 registros
+    h = V.validar_todo(**fuentes)
+    assert "llave_unica" not in set(h["regla"])
+    repetido = pd.concat([ce, ce.iloc[[0]]], ignore_index=True)         # mismo ID dos veces: eso sí es un error
+    assert V.llave_unica(repetido, "id_registro", "centralizadas")["regla"].tolist() == ["llave_unica"] * 2
+
+
+def test_producto_mga_distinto_al_del_codigo_es_advertencia_no_error(fuentes):
+    ce = fuentes["centralizadas"].copy()
+    ce.loc[0, "codigo_producto_mga"] = "9901000"
+    h = V.codigo_mp_coherente(ce, "centralizadas")
+    assert h["severidad"].tolist() == ["advertencia"] and h["regla"].tolist() == ["codigo_mp_vs_producto_mga"]
+
+
+def test_actividad_de_meta_ajena_es_advertencia_no_error(fuentes):
+    ce = fuentes["centralizadas"].copy()
+    ce.loc[0, "codigo_mp"] = "MP9800101019801001"                       # meta coordinada por otra dependencia
+    h = V.cobertura_centralizadas_vs_pi(ce, fuentes["pi_mp_evaplan"])
+    assert ("actividad_sin_meta_en_pi", "advertencia") in set(zip(h["regla"], h["severidad"]))
+    assert "OTRA" in h.iloc[0]["detalle"].upper()
+
+
+def test_las_validaciones_de_drive_solo_miran_las_entidades_cargadas(fuentes):
+    dm = fuentes["drive_mp"].copy()
+    ajena = dm["entidad_codigo"] == "9998"
+    dm.loc[ajena, ["pi_pg", "pi_2027"]] = [999.0, 0.0]                  # rompe la regla del PG en OTRA entidad
+    h = V.validar_todo(**{**fuentes, "drive_mp": dm})
+    assert not any(h["llave"].isin(dm.loc[ajena, "codigo_mp"]))         # no se reporta: no es de la dependencia
+    solo_ajena = V.validar_todo(drive_mp=dm)                            # sin archivos de EVAPLAN se revisa todo el libro
+    assert any(solo_ajena["llave"].isin(dm.loc[ajena, "codigo_mp"]))

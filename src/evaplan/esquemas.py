@@ -230,9 +230,9 @@ CENTRALIZADAS = Esquema(
     descripcion="Actividades de proyectos de inversión de UNA entidad, con presupuesto y avance de la vigencia.",
     origen_datos="Descarga de EVAPLAN: 'Centralizadas.xlsx'",
     fila_encabezado=1,
-    llave=("codigo_actividad",),
+    llave=("id_registro",),
     campos=(
-        Campo("id_registro", "ID", "codigo", "Identificador interno de EVAPLAN."),
+        Campo("id_registro", "ID", "codigo", "Identificador único del REGISTRO presupuestal en EVAPLAN (llave de la tabla)."),
         Campo("codigo_entidad", "Cod.Entidad", "codigo", "Código de la entidad."),
         Campo("nombre_entidad", "Nombre.Entidad", "texto", "Nombre ABREVIADO y con caracteres perdidos.",
               notas="No usar como llave: 'SRIA DE EJEMPLO  DE LA INFORM' (faltan tildes)."),
@@ -242,14 +242,15 @@ CENTRALIZADAS = Esquema(
         Campo("codigo_mp", "Cód. MP", "codigo", "Meta de producto a la que contribuye la actividad."),
         Campo("descripcion_mp", "Descripción MP", "texto", "Texto de la meta de producto."),
         Campo("codigo_producto_mga", "Cód.Producto MGA", "codigo", "Producto MGA (7 dígitos).",
-              notas="Siempre igual a los últimos 7 caracteres del código MP."),
+              notas="Casi siempre igual a los últimos 7 caracteres del código MP (en datos reales hay casos con 1 dígito de diferencia)."),
         Campo("producto_mga", "Producto MGA", "texto", "Nombre del producto MGA."),
         Campo("codigo_indicador_producto_mga", "Cod.Indicador Producto MGA", "codigo",
               "Indicador de producto MGA (9 dígitos).", notas="Normalmente producto + '00', no siempre."),
         Campo("indicador_producto_mga", "Indicador Producto MGA", "texto", "Nombre del indicador de producto."),
         Campo("codigo_actividad", "Cód. Actividad", "codigo",
               "Código de la actividad: '<proyecto>/a/b/cc/dd' (5 partes separadas por '/').",
-              notas="Empieza siempre por el código del proyecto."),
+              notas="Empieza siempre por el código del proyecto. NO es único: una actividad puede tener varios "
+                    "registros (distinto ID, presupuesto y, a veces, estado, avance y observación)."),
         Campo("nombre_actividad", "Nombre Actividad", "texto", "Nombre de la actividad."),
         Campo("codigo_fondo", "Cód. Fondo", "codigo", "Código de la fuente de financiación."),
         Campo("nombre_fondo", "Nombre Fondo", "texto", "Nombre de la fuente de financiación."),
@@ -278,7 +279,11 @@ CENTRALIZADAS = Esquema(
               nulo=True),
         Campo("estado_registro", "Estado", "texto", "Estado del registro (ACTIVO)."),
     ),
-    notas=("Fila 1 es un título ('EvaPlan'); los encabezados están en la fila 2.",),
+    notas=("Fila 1 es un título ('EvaPlan'); los encabezados están en la fila 2.",
+           "Cada fila es un REGISTRO presupuestal (llave: `ID`), no una actividad: la misma actividad aparece en "
+           "varias filas cuando tiene varios registros. Los presupuestos se suman; el avance se promedia por registro.",
+           "Solo trae los proyectos de los que la dependencia es centro gestor (módulo PA): pueden aportar a metas "
+           "coordinadas por OTRA dependencia, y las metas propias pueden recibir aportes de proyectos ajenos."),
 )
 
 

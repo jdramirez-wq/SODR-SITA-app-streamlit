@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.evaplan import pipeline, reportes
 from src.evaplan.lectura import EsquemaError
 from src.evaplan.prompts import PERIODOS, generar_prompt_sistema
+from src.evaplan.reglas import etiquetar
 from src.evaplan.seguimiento import ETIQUETAS
 from src.evaplan.version import version_codigo
 
@@ -153,7 +154,8 @@ with tab_res:
     if res.hallazgos.empty:
         st.success("Sin hallazgos objetivos.")
     else:
-        st.dataframe(res.hallazgos.groupby(["severidad", "regla"]).size().rename("metas").reset_index(),
+        st.dataframe(etiquetar(res.hallazgos).groupby(["severidad", "hallazgo"]).size().rename("metas").reset_index()
+                     .sort_values(["severidad", "metas"], ascending=[True, False]),
                      hide_index=True, use_container_width=True)
     st.subheader("Plan de acción vs. meta")
     st.dataframe(
@@ -204,7 +206,7 @@ with tab_mat:
 with tab_hal:
     sev = st.multiselect("Severidad", ["error", "advertencia", "info"], default=["error", "advertencia", "info"])
     h = res.hallazgos[res.hallazgos["severidad"].isin(sev)]
-    st.dataframe(h.drop(columns=["fila_excel", "fuente"]), hide_index=True, use_container_width=True)
+    st.dataframe(etiquetar(h).drop(columns=["fila_excel", "fuente"]), hide_index=True, use_container_width=True)
     st.caption("Son incoherencias objetivas (no necesitan umbral). La gravedad y el dictamen los decide quien revisa.")
 
 with tab_cal:
@@ -212,7 +214,7 @@ with tab_cal:
     if res.calidad.empty:
         st.success("Sin observaciones de calidad de datos.")
     else:
-        st.dataframe(res.calidad, hide_index=True, use_container_width=True)
+        st.dataframe(etiquetar(res.calidad), hide_index=True, use_container_width=True)
 
 with tab_out:
     d1, d2 = st.columns(2)

@@ -66,6 +66,12 @@ python scripts/generar_ejemplos.py      # regenera los archivos ficticios
 - `Resultado` = último reporte **acumulado de la vigencia**. `Valor Proyectado` = proyección de cierre de la
   dependencia (campo creado nov-2025; puede venir vacío; misma escala que la meta de la vigencia).
 - Alcance actual: solo **metas de producto** (MP). Las metas de resultado (MR) quedan fuera por ahora.
+- **Centralizadas:** cada fila es un REGISTRO presupuestal (llave `id_registro`); el código de actividad se repite. Se
+  cuentan actividades y registros por separado y los presupuestos se suman.
+- **PA ≠ PI:** el PA (Centralizadas) lo reporta el centro gestor del proyecto; el PI (metas) solo el coordinador de la meta.
+  Hay metas compartidas: "meta sin actividades"/"avance sin obligaciones" pueden deberse a proyectos de otra dependencia.
+- La justificación de un avance 0 puede estar en *Análisis del logro* **o** en *Dificultades* (cada dependencia usa uno).
+- El indicador "con alertas" cuenta solo advertencias y errores; lo informativo no suma.
 - Avance de actividades: promediar **por proyecto de inversión** (lo exige el prompt), además del global.
 - Llave de entidad = **código** (9999), nunca el nombre. Llave de meta: `codigo_mp` (18 caracteres) /
   `codigo_mr` (5 dígitos). Para seguimiento comparar contra el bloque **vigente** de Drive, no el original.

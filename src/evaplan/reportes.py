@@ -8,6 +8,7 @@ import pandas as pd
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
 
+from .reglas import etiquetar
 from .seguimiento import COLUMNAS_MATRIZ, ETIQUETAS
 
 _MARGEN_X, _MARGEN_Y = 50, 50
@@ -28,12 +29,12 @@ def a_excel(matriz: pd.DataFrame, hallazgos: pd.DataFrame, calidad: pd.DataFrame
     buf = io.BytesIO()
     with pd.ExcelWriter(buf, engine="openpyxl") as w:
         matriz[COLUMNAS_MATRIZ].rename(columns=ETIQUETAS).to_excel(w, index=False, sheet_name="MP_PI_PA")
-        hallazgos.to_excel(w, index=False, sheet_name="Hallazgos")
+        etiquetar(hallazgos).to_excel(w, index=False, sheet_name="Hallazgos")
         matriz.loc[matriz["estado_reporte"] != "Reportada",
                    ["codigo_entidad", "codigo_mp", "descripcion_mp", "comportamiento", "meta_vigencia"]
                    ].rename(columns=ETIQUETAS).to_excel(w, index=False, sheet_name="Sin_reporte")
         if calidad is not None:
-            calidad.to_excel(w, index=False, sheet_name="Calidad_de_datos")
+            etiquetar(calidad).to_excel(w, index=False, sheet_name="Calidad_de_datos")
         for ws in w.book.worksheets:           # anchos legibles y encabezado fijo
             ws.freeze_panes = "A2"
             for col in ws.columns:

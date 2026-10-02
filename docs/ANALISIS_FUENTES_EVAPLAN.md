@@ -113,6 +113,45 @@ El libro tiene 276 columnas en la hoja MP, encabezados repetidos, y columnas con
 (`EDT (corte 02/03/2026)`). Si alguien inserta una columna, una lectura "por nombre" se corrompería sin avisar. El
 lector valida el encabezado esperado en cada posición y falla con un mensaje claro (`EsquemaError`).
 
+## 2b. Prueba con 10 dependencias reales (2 de octubre de 2026)
+Tras la primera versión de la página se probó con los exports de 10 dependencias (Mujer, Paz, Rentas, Vivienda,
+Desarrollo Social, Turismo, Transparencia, DADI, Tecnologías y General; cortes de junio, contra el Plan Indicativo de
+Drive de octubre). Ninguna rompió la lectura. Las cifras se verificaron de forma independiente (pandas puro) y
+coinciden. Lo que mostraron y se corrigió:
+
+### H8 · Cada fila de Centralizadas es un REGISTRO presupuestal, no una actividad ✅
+El `ID` es único; el código de actividad se repite (hasta 4 filas) con distinto presupuesto y, a veces, distinto estado,
+avance y observación. Se había asumido `codigo_actividad` único y daba falsos **errores** en Paz y Vivienda. Ahora la
+llave es `ID`, se cuentan actividades y registros por separado y los presupuestos se suman.
+- ❓ Con varios registros por actividad el promedio de avance cuenta cada registro (como la página original). Ver
+  [PREGUNTAS_ABIERTAS.md](PREGUNTAS_ABIERTAS.md).
+
+### H9 · PA y PI tienen responsables distintos: hay metas compartidas ✅ (nota SODR del 1-oct)
+El PA (actividades) lo reporta el centro gestor del proyecto; el PI (metas) solo el coordinador de la meta, aunque la
+ejecute otra dependencia. Por eso, en el archivo de una dependencia: (a) sus metas pueden recibir aportes de proyectos
+**ajenos** y (b) sus proyectos pueden aportar a metas de **otra** dependencia. Consecuencias: "meta sin actividades" y
+"avance sin obligaciones" son señales para validar con la otra dependencia, no necesariamente errores; y "actividad sin
+meta en el PI" pasó de error a advertencia. Una integración con el Z023 consolidado resolvería el cruce completo.
+
+### H10 · Las observaciones ya explican muchas "obligaciones sin avance" ✅
+En Mujer, 30 de 31 registros con obligaciones y sin avance traen una observación del tipo "el entregable está para el
+mes de octubre". Se separaron: **sin observación = advertencia; con observación = informativo**. Y solo cuentan si la
+actividad tiene cantidad programada en la vigencia (24 de 67 registros de Mujer no la tienen).
+
+### H11 · La justificación de un avance 0 se escribe en lugares distintos según la dependencia ✅
+Mujer la escribe en *Análisis del logro* (7 de 7 metas con resultado 0; ninguna en Dificultades); Vivienda en
+*Dificultades* (10 de 12). El prompt pide Dificultades y la circular del 3.er trimestre pide Análisis. La herramienta
+acepta **cualquiera de los dos**; se retiró la regla que penalizaba escribirla en Análisis.
+
+### H12 · Con exports de junio y Drive de octubre aparecen diferencias reales de programación ✅
+En Vivienda, 2 metas tienen una meta 2026 distinta entre el export (junio) y Drive (octubre): el escenario de "export
+desactualizado". La app calcula con Drive y ahora lo avisa en la tabla principal (`meta_vigencia_difiere_del_export`).
+
+### H13 · Otros hallazgos de calidad reales
+- DADI: 2 registros con obligaciones (598 y 17 millones) y presupuesto definitivo 0.
+- Vivienda: el producto MGA de Centralizadas difiere en 1 dígito del que lleva el código de la meta (2 registros).
+- Las validaciones del libro de Drive se aplicaban a las 49 entidades; ahora solo a las de los archivos cargados.
+
 ## 3. Decisiones tomadas
 1. **Un diccionario único en código** (`src/evaplan/esquemas.py`) del que salen los lectores y esta
    documentación (`docs/DICCIONARIO_DE_DATOS.md`).

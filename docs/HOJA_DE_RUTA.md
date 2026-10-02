@@ -19,6 +19,9 @@ Estructura, `CLAUDE.md`, README, CI, plantillas, reglas de privacidad.
 - [ ] Revisión con los compañeros de la SODR con una dependencia real
 
 ## Fase 3 — Pulir la primera versión
+- [x] Probada en navegador real con 10 dependencias reales; cifras verificadas de forma independiente (ver análisis 2b)
+- [ ] Integrar el **Z023 consolidado** para mapear proyectos de otras dependencias que aportan a cada meta (metas compartidas)
+- [ ] Definir si el avance se promedia por actividad o por registro (preguntas 3 y 5)
 - [ ] Resolver lo que queda en [PREGUNTAS_ABIERTAS.md](PREGUNTAS_ABIERTAS.md) (reglas del PG, periodo, histórico)
 - [ ] **Revisar el script del compañero** y rescatar lo útil
 - [ ] ~~Metas de resultado (MR) en la página~~ — fuera de alcance por ahora (solo MP)

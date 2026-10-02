@@ -22,16 +22,28 @@ Cuando se resuelva una, se mueve a [REGLAS_DE_NEGOCIO.md](REGLAS_DE_NEGOCIO.md) 
 2. **Reglas del PG** para Incremento Flujo, Capacidad y Reducción Anual: 14 metas del PI original no cumplen la regla
    (por ejemplo, Flujo con 2027 = 0 y PG > 0). ¿Son errores de digitación o la regla es otra?
 
+## Surgidas al probar con 10 dependencias reales
+3. **Promedio de avance con varios registros por actividad:** una actividad puede tener varios registros (ID) con distinto
+   avance (p. ej. 0 % y 7.7 %). Hoy el promedio cuenta cada registro (como la página original). ¿Debe promediarse por
+   actividad? ¿Qué valor se toma si los registros difieren?
+4. **Justificación del avance 0:** el prompt la pide en *Dificultades* y la circular del 3.er trimestre en *Análisis del
+   logro*; en los datos, Mujer usa Análisis y Vivienda Dificultades. La herramienta acepta cualquiera de los dos. ¿Se
+   mantiene así?
+5. **Actividades con avance 0 y observación vacía (`.`):** la circular prohíbe los vacíos. ¿Activamos una alerta por
+   actividad? Hoy solo se alerta si además hay obligaciones.
+6. **Metas compartidas:** ¿integramos el *Z023 consolidado* para saber qué proyectos de otras dependencias aportan a
+   cada meta? Eliminaría los falsos avisos de "avance sin obligaciones" y "meta sin actividades".
+
 ## Decisiones de producto
-3. **Prompt:** el bloque opcional "Hechos verificados" queda **activado por defecto** (se puede desmarcar en la barra
+7. **Prompt:** el bloque opcional "Hechos verificados" queda **activado por defecto** (se puede desmarcar en la barra
    lateral). Se revisa cuando el equipo compare respuestas del LLM con y sin el bloque.
-4. **Periodo de revisión:** hoy solo cambia el texto del prompt. ¿Se muestra además una referencia neutral de
+8. **Periodo de revisión:** hoy solo cambia el texto del prompt. ¿Se muestra además una referencia neutral de
    tiempo transcurrido (25 %, 50 %…) junto al avance? No sería umbral: solo contexto.
-5. **Histórico:** ¿interesa guardar cada corte para ver la evolución de una dependencia?
+9. **Histórico:** ¿interesa guardar cada corte para ver la evolución de una dependencia?
 
 ## Seguridad
-6. **Repo público:** Streamlit Community Cloud indica que **sí admite repos privados** (pide un permiso adicional de
+10. **Repo público:** Streamlit Community Cloud indica que **sí admite repos privados** (pide un permiso adicional de
    GitHub, `repo`), aunque no pude abrir su documentación oficial para confirmarlo ni sus límites vigentes.
    ¿Pueden probar a pasar el repo a privado en `share.streamlit.io` (Settings → Repository)?
-7. **Libro de Drive:** ¿está compartido como "cualquiera con el enlace"? Su ID sigue en `pages/2_POAI_2027.py`.
+11. **Libro de Drive:** ¿está compartido como "cualquiera con el enlace"? Su ID sigue en `pages/2_POAI_2027.py`.
     La página de seguimiento ya lee el enlace de un secreto (`URL_DRIVE_PLAN_INDICATIVO`), no del código.
