@@ -19,9 +19,9 @@ Estructura, `CLAUDE.md`, README, CI, plantillas, reglas de privacidad.
 - [ ] Revisión con los compañeros de la SODR con una dependencia real
 
 ## Fase 3 — Pulir la primera versión
-- [ ] Resolver [PREGUNTAS_ABIERTAS.md](PREGUNTAS_ABIERTAS.md) (confirmaciones rápidas y decisiones de producto)
+- [ ] Resolver lo que queda en [PREGUNTAS_ABIERTAS.md](PREGUNTAS_ABIERTAS.md) (reglas del PG, periodo, histórico)
 - [ ] **Revisar el script del compañero** y rescatar lo útil
-- [ ] Metas de resultado (MR) en la página, si el equipo lo decide
+- [ ] ~~Metas de resultado (MR) en la página~~ — fuera de alcance por ahora (solo MP)
 - [ ] Fijar versiones en `requirements.txt`; quitar `use_container_width` (obsoleto en Streamlit reciente)
 
 ## Fase 4 — Seguridad (repo público)

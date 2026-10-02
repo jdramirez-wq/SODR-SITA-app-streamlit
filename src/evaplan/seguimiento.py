@@ -22,7 +22,7 @@ _RE_GESTION = re.compile(r"gesti[oó]n|donaci[oó]n|cofinanci|sin\s+costo", re.I
 COLUMNAS_MATRIZ = [
     "codigo_entidad", "codigo_mp", "descripcion_mp", "mr_del_mp", "comportamiento", "unidad_medida", "periodicidad",
     "estado_reporte", "vigencia", "pg", "meta_vigencia", "meta_vigencia_np", "logro_previo",
-    "resultado", "valor_proyectado", "pct_avance_vigencia", "avance_cuatrienio", "pct_avance_pg",
+    "resultado", "valor_proyectado", "pct_proyectado_vs_meta", "pct_avance_vigencia", "avance_cuatrienio", "pct_avance_pg",
     "tiene_plan_de_accion", "n_proyectos", "proyectos", "n_actividades",
     "ppto_definitivo", "ppto_obligaciones", "ppto_disponible", "pct_ejecucion_financiera",
     "avance_actividades", "avance_por_proyecto", "n_actividades_con_obligaciones_sin_avance",
@@ -37,7 +37,7 @@ ETIQUETAS = {
     "periodicidad": "Periodicidad", "estado_reporte": "Estado del reporte", "vigencia": "Vigencia",
     "pg": "PG cuatrienio", "meta_vigencia": "Meta vigencia", "meta_vigencia_np": "Vigencia no programada (NP)",
     "logro_previo": "Logro vigencias cerradas", "resultado": "Resultado (último acumulado)",
-    "valor_proyectado": "Valor proyectado", "pct_avance_vigencia": "% avance vs meta vigencia",
+    "valor_proyectado": "Valor proyectado (cierre)", "pct_proyectado_vs_meta": "% proyectado vs meta vigencia", "pct_avance_vigencia": "% avance vs meta vigencia",
     "avance_cuatrienio": "Avance cuatrienio", "pct_avance_pg": "% avance vs PG",
     "tiene_plan_de_accion": "Tiene plan de acción", "n_proyectos": "N.º proyectos", "proyectos": "Proyectos asociados",
     "n_actividades": "N.º actividades", "ppto_definitivo": "Ppto. definitivo", "ppto_obligaciones": "Obligaciones",
@@ -139,6 +139,8 @@ def construir_matriz(pi_mp: pd.DataFrame, centralizadas: pd.DataFrame, drive_mp:
         logro_previo = (sum(0.0 if _na(v) else float(v) for v in previos)
                         if comp in COMPORTAMIENTOS_ACUMULATIVOS else pd.NA)
         pg = de_base("valor_pg")
+        proyectado = _num(r["valor_proyectado"]) if r is not None else pd.NA
+        pct_proy = (proyectado / float(meta)) if not _na(proyectado) and not _na(meta) and float(meta) > 0 else pd.NA
         pct_vig = (resultado / float(meta)) if not _na(resultado) and not _na(meta) and float(meta) > 0 else pd.NA
         avance_cuat = (logro_previo + resultado) if not _na(logro_previo) and not _na(resultado) else pd.NA
         pct_pg = (avance_cuat / float(pg)) if not _na(avance_cuat) and not _na(pg) and float(pg) > 0 else pd.NA
@@ -161,7 +163,7 @@ def construir_matriz(pi_mp: pd.DataFrame, centralizadas: pd.DataFrame, drive_mp:
             "estado_reporte": "Reportada" if r is not None else "Sin reporte en EVAPLAN",
             "vigencia": vigencia, "pg": _num(pg), "meta_vigencia": _num(meta), "meta_vigencia_np": meta_np,
             "logro_previo": logro_previo,
-            "resultado": resultado, "valor_proyectado": _num(r["valor_proyectado"]) if r is not None else pd.NA,
+            "resultado": resultado, "valor_proyectado": proyectado, "pct_proyectado_vs_meta": pct_proy,
             "pct_avance_vigencia": pct_vig, "avance_cuatrienio": avance_cuat, "pct_avance_pg": pct_pg,
             "tiene_plan_de_accion": p is not None,
             "n_proyectos": p["n_proyectos"] if p is not None else 0,
@@ -185,7 +187,7 @@ def construir_matriz(pi_mp: pd.DataFrame, centralizadas: pd.DataFrame, drive_mp:
     por_mp = h.groupby("llave")["detalle"].agg(lambda s: " · ".join(s)) if len(h) else pd.Series(dtype=str)
     m["alertas"] = m["codigo_mp"].map(por_mp).fillna("").astype("string")
     m["n_alertas"] = m["codigo_mp"].map(h.groupby("llave").size() if len(h) else {}).fillna(0).astype(int)
-    for c in ("pg", "meta_vigencia", "logro_previo", "resultado", "valor_proyectado", "pct_avance_vigencia",
+    for c in ("pg", "meta_vigencia", "logro_previo", "resultado", "valor_proyectado", "pct_proyectado_vs_meta", "pct_avance_vigencia",
               "avance_cuatrienio", "pct_avance_pg", "ppto_definitivo", "ppto_obligaciones", "ppto_disponible",
               "pct_ejecucion_financiera", "avance_actividades", "brecha_meta_vs_actividades"):
         m[c] = m[c].astype("Float64")
@@ -233,6 +235,13 @@ def detectar_hallazgos(m: pd.DataFrame) -> pd.DataFrame:
         if res == 0 and (not _na(f["principal_logro"]) or not _na(f["analisis_logro"])):
             add("narrativa_con_resultado_cero", "info", f,
                 "Resultado 0 con Principal Logro/Análisis: lo esperado es explicar en Dificultades")
+        proy = f["valor_proyectado"]
+        if not _na(proy) and not _na(f["meta_vigencia"]) and not f["meta_vigencia_np"] and proy < f["meta_vigencia"]:
+            add("proyeccion_bajo_meta", "advertencia", f,
+                f"La dependencia proyecta cerrar en {proy:g}, por debajo de la meta de la vigencia ({f['meta_vigencia']:g})")
+        if not _na(proy) and proy < res and f["comportamiento"] in COMPORTAMIENTOS_ACUMULATIVOS:
+            add("proyeccion_menor_que_resultado", "advertencia", f,
+                f"La proyección de cierre ({proy:g}) es menor que el resultado ya acumulado ({res:g})")
         if not _na(f["pct_avance_vigencia"]) and f["pct_avance_vigencia"] > 1:
             add("resultado_supera_meta_vigencia", "info", f,
                 f"El resultado ({res:g}) supera la meta de la vigencia ({f['meta_vigencia']:g})")

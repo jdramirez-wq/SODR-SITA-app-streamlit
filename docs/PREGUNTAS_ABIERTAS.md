@@ -12,28 +12,26 @@ Cuando se resuelva una, se mueve a [REGLAS_DE_NEGOCIO.md](REGLAS_DE_NEGOCIO.md) 
 | Umbrales de cumplimiento | **No hay umbrales únicos** (se desconoce el cronograma de ejecución del presupuesto); el juicio lo hace el LLM | Principio de diseño: el código calcula hechos, no semáforos |
 | Prompts | Están en el repositorio | `src/evaplan/prompts.py` |
 | Script del compañero | Se revisa **al final de la primera versión** | Hoja de ruta, Fase 3 |
+| `Resultado` ¿de la vigencia o del cuatrienio? | **Acumulado de la vigencia** | Avance del cuatrienio = logro de vigencias cerradas + resultado |
+| `Valor Proyectado` | Campo creado por el operador de EVAPLAN hacia nov-2025 para que la Gobernación anticipara el cierre de las MP; sigue en 2026, puede venir vacío y quizá se retome el próximo mes | Columnas `% proyectado vs meta`, alertas `proyeccion_bajo_meta` y `proyeccion_menor_que_resultado` |
+| ¿Incluir metas de resultado (MR)? | **No por ahora**: solo metas de producto | Hoja de ruta (fuera de alcance) |
 
 ## Para confirmar (rápidas)
-1. **`Resultado` es acumulado de la vigencia, no del cuatrienio.** Los datos lo sugieren con fuerza (en las metas
-   acumuladas, el logro de las vigencias cerradas ya supera al resultado). ¿Es correcto? La herramienta suma
-   `logro de vigencias cerradas + resultado` para estimar el avance frente al PG.
-2. **`Valor Proyectado`:** ¿es la proyección de la dependencia a cierre de vigencia?
-3. **MR 2025:** en la hoja MR del Drive el encabezado 2025 no dice `VAL ALC`. ¿Falta cargar el logro 2025 de las
-   metas de resultado, o solo falta renombrar el encabezado?
-4. **Reglas del PG** para Incremento Flujo, Capacidad y Reducción Anual: 14 metas del PI original no cumplen la regla
+1. **MR 2025:** en la hoja MR del Drive el encabezado 2025 no dice `VAL ALC`. ¿Falta cargar el logro 2025 de las
+   metas de resultado, o solo falta renombrar el encabezado? (No afecta a la página mientras solo se usen MP.)
+2. **Reglas del PG** para Incremento Flujo, Capacidad y Reducción Anual: 14 metas del PI original no cumplen la regla
    (por ejemplo, Flujo con 2027 = 0 y PG > 0). ¿Son errores de digitación o la regla es otra?
 
 ## Decisiones de producto
-5. **Metas de resultado (MR):** ¿la página debe incluirlas ya, o la primera versión se queda en metas de producto?
-6. **Prompt:** se añadió un bloque opcional "Hechos verificados" (avisa al LLM que las cifras ya están calculadas
-   y que no las recalcule). ¿Lo dejamos activado por defecto?
-7. **Periodo de revisión:** hoy solo cambia el texto del prompt. ¿Se muestra además una referencia neutral de
+3. **Prompt:** el bloque opcional "Hechos verificados" queda **activado por defecto** (se puede desmarcar en la barra
+   lateral). Se revisa cuando el equipo compare respuestas del LLM con y sin el bloque.
+4. **Periodo de revisión:** hoy solo cambia el texto del prompt. ¿Se muestra además una referencia neutral de
    tiempo transcurrido (25 %, 50 %…) junto al avance? No sería umbral: solo contexto.
-8. **Histórico:** ¿interesa guardar cada corte para ver la evolución de una dependencia?
+5. **Histórico:** ¿interesa guardar cada corte para ver la evolución de una dependencia?
 
 ## Seguridad
-9. **Repo público:** Streamlit Community Cloud indica que **sí admite repos privados** (pide un permiso adicional de
+6. **Repo público:** Streamlit Community Cloud indica que **sí admite repos privados** (pide un permiso adicional de
    GitHub, `repo`), aunque no pude abrir su documentación oficial para confirmarlo ni sus límites vigentes.
    ¿Pueden probar a pasar el repo a privado en `share.streamlit.io` (Settings → Repository)?
-10. **Libro de Drive:** ¿está compartido como "cualquiera con el enlace"? Su ID sigue en `pages/2_POAI_2027.py`.
+7. **Libro de Drive:** ¿está compartido como "cualquiera con el enlace"? Su ID sigue en `pages/2_POAI_2027.py`.
     La página de seguimiento ya lee el enlace de un secreto (`URL_DRIVE_PLAN_INDICATIVO`), no del código.

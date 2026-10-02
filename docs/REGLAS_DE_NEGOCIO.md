@@ -56,6 +56,7 @@ Se calculan **hechos**, sin umbrales: no existe un cronograma único de ejecuci�
 | S10 | Actividades con obligaciones y sin avance físico (crítico en actividades) | ✅ | advertencia | `actividades_con_obligaciones_sin_avance` |
 | S11 | Avance sin Principal Logro/Análisis; resultado 0 con logro/análisis | ✅ | advertencia / info | `resultado_sin_narrativa`, `narrativa_con_resultado_cero` |
 | S12 | Reporte con avance pero sin meta programada (NP o 0); resultado supera la meta | ✅ | advertencia / info | `reporte_sin_meta_programada`, `resultado_supera_meta_vigencia` |
+| S12b | Proyección de cierre de la dependencia (`Valor Proyectado`) por debajo de la meta de la vigencia; o menor que el resultado ya acumulado en metas acumulativas | ✅ | advertencia | `proyeccion_bajo_meta`, `proyeccion_menor_que_resultado` |
 | S13 | Meta sin actividades en Centralizadas | — | info | `sin_plan_de_accion` |
 | S14 | Encabezado del año cerrado sin `VAL ALC` (o abierto con `VAL ALC`) en Drive | ✅ | advertencia | `vigencia_*_marca_logro` |
 
@@ -64,5 +65,5 @@ jerárquica (se entrega la brecha numérica `meta vs actividades`, no un veredic
 
 ## Pendiente de definir (requiere al equipo)
 - Tratamiento de `Reducción Anual` (metas de resultado) y de metas reprogramadas dentro del cuatrienio.
-- Metas de resultado en la página de seguimiento.
+- Metas de resultado: fuera de alcance por ahora (solo metas de producto).
 - Semáforos: **descartados por ahora** (no hay umbrales únicos); se retomarán si el equipo define un cronograma.

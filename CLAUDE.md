@@ -63,6 +63,9 @@ python scripts/generar_ejemplos.py      # regenera los archivos ficticios
   La vigencia en curso es el primer año sin `VAL ALC`. Nunca fijar el año en el código (usar `vigencia`).
 - El universo de metas de una dependencia es el **Plan Indicativo de Drive**; las que no están en el export de EVAPLAN
   son metas **sin reporte**. El enlace de Drive va en el secreto `URL_DRIVE_PLAN_INDICATIVO`.
+- `Resultado` = último reporte **acumulado de la vigencia**. `Valor Proyectado` = proyección de cierre de la
+  dependencia (campo creado nov-2025; puede venir vacío; misma escala que la meta de la vigencia).
+- Alcance actual: solo **metas de producto** (MP). Las metas de resultado (MR) quedan fuera por ahora.
 - Avance de actividades: promediar **por proyecto de inversión** (lo exige el prompt), además del global.
 - Llave de entidad = **código** (9999), nunca el nombre. Llave de meta: `codigo_mp` (18 caracteres) /
   `codigo_mr` (5 dígitos). Para seguimiento comparar contra el bloque **vigente** de Drive, no el original.

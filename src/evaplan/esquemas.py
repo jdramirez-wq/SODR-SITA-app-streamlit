@@ -176,7 +176,11 @@ PI_MP_EVAPLAN = Esquema(
               notas="Dato clave de seguimiento. En los datos es el acumulado de la VIGENCIA en curso "
                     "(menor que los logros previos sumados en metas acumuladas), no del cuatrienio."),
         Campo("valor_proyectado", "Valor Proyectado", "decimal",
-              "Proyección reportada por la entidad.", nulo=True, notas="Por confirmar su significado."),
+              "Proyección de la dependencia sobre cómo cerrará la meta en la vigencia (✅ confirmado).",
+              nulo=True,
+              notas="Campo creado por el operador de EVAPLAN hacia nov-2025 para anticipar el cierre de las MP "
+                    "(requerimiento de la Gobernación). Sigue existiendo en 2026, pero puede venir vacío. "
+                    "Está en la misma escala que la meta de la vigencia."),
         *_valores_evaplan(),
         *_NARRATIVA,
         *_focalizacion_evaplan(),
@@ -212,7 +216,7 @@ PI_MR_EVAPLAN = Esquema(
         Campo("constante_k", "Constante (K)", "decimal", "Constante de la fórmula."),
         Campo("formula", "Fórmula", "texto", "Fórmula del indicador."),
         Campo("resultado", "Resultado", "decimal", "Último reporte ACUMULADO de la dependencia (✅ confirmado)."),
-        Campo("valor_proyectado", "Valor Proyectado", "decimal", "Proyección reportada.", nulo=True),
+        Campo("valor_proyectado", "Valor Proyectado", "decimal", "Proyección de cierre de la vigencia (puede venir vacío).", nulo=True),
         *_valores_evaplan(),
         *_NARRATIVA,
     ),

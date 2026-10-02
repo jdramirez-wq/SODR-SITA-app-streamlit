@@ -87,7 +87,8 @@ def a_pdf(matriz: pd.DataFrame) -> bytes:
         y = _bloque(c, f"PLAN INDICATIVO (PI) — vigencia {f['vigencia']}", y, width, height, 11, True)
         y = _bloque(c, f"Programación de la vigencia (meta): {_fmt(f['meta_vigencia'])}", y, width, height)
         y = _bloque(c, f"Resultado (último reporte acumulado): {_fmt(f['resultado'])}", y, width, height)
-        y = _bloque(c, f"Valor Proyectado: {_fmt(f['valor_proyectado'])}", y, width, height)
+        y = _bloque(c, f"Valor Proyectado (cierre de vigencia, según la dependencia): {_fmt(f['valor_proyectado'])} "
+                       f"({_pct(f['pct_proyectado_vs_meta'])} de la meta)", y, width, height)
         y = _bloque(c, f"% avance frente a la meta de la vigencia: {_pct(f['pct_avance_vigencia'])}", y, width, height)
         if not pd.isna(f["logro_previo"]):
             y = _bloque(c, f"Logro de vigencias cerradas: {_fmt(f['logro_previo'])} | PG: {_fmt(f['pg'])} | "

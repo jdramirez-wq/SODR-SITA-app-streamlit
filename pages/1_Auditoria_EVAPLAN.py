@@ -168,7 +168,7 @@ with tab_mat:
         v = v[v["codigo_mp"].str.contains(texto, case=False, na=False)
               | v["descripcion_mp"].astype("string").str.contains(texto, case=False, na=False)]
     cols = ["codigo_mp", "estado_reporte", "comportamiento", "meta_vigencia", "resultado", "pct_avance_vigencia",
-            "pct_avance_pg", "ppto_definitivo", "ppto_obligaciones", "pct_ejecucion_financiera",
+            "valor_proyectado", "pct_avance_pg", "ppto_definitivo", "ppto_obligaciones", "pct_ejecucion_financiera",
             "avance_actividades", "n_alertas"]
     st.dataframe(_vista(v)[cols].rename(columns=ETIQUETAS),
                  column_config={ETIQUETAS[c]: x for c, x in {**PCT, **DINERO}.items()},
@@ -180,10 +180,11 @@ with tab_mat:
     if len(v):
         mp = st.selectbox("Meta", v["codigo_mp"], format_func=lambda c: f"{c} · {m.set_index('codigo_mp').loc[c, 'descripcion_mp']}"[:140])
         f = m.set_index("codigo_mp").loc[mp]
-        a, b, c = st.columns(3)
+        a, b, c, d = st.columns(4)
         a.metric("Meta vigencia", f"{f['meta_vigencia']:g}" if pd.notna(f["meta_vigencia"]) else "NP")
-        b.metric("Resultado", f"{f['resultado']:g}" if pd.notna(f["resultado"]) else "—")
+        b.metric("Resultado (acumulado)", f"{f['resultado']:g}" if pd.notna(f["resultado"]) else "—")
         c.metric("% vs meta", f"{f['pct_avance_vigencia'] * 100:.1f} %" if pd.notna(f["pct_avance_vigencia"]) else "—")
+        d.metric("Proyección de cierre", f"{f['valor_proyectado']:g}" if pd.notna(f["valor_proyectado"]) else "sin dato")
         st.write(f"**Comportamiento:** {f['comportamiento']} · **Proyectos:** {f['proyectos'] if pd.notna(f['proyectos']) else 'sin plan de acción'}")
         st.write(f"**Avance de actividades por proyecto:** {f['avance_por_proyecto'] if pd.notna(f['avance_por_proyecto']) else '—'}")
         if f["alertas"]:

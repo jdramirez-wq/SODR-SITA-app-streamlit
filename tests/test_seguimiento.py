@@ -131,3 +131,21 @@ def test_pipeline_con_archivo_subido_se_puede_leer_dos_veces():
 def test_estructura_incorrecta_da_error_claro():
     with pytest.raises(L.EsquemaError, match="Código de Meta"):
         pipeline.ejecutar(CE, CE, None)                           # el usuario subió Centralizadas en el lugar del PI
+
+
+def test_valor_proyectado_es_proyeccion_de_cierre(datos):
+    pi, ce, dr = datos
+    m = S.construir_matriz(pi, ce, dr).set_index("codigo_mp")
+    f = m.loc["MP9900101019901001"]                                # proyectado 25 vs meta 30
+    assert f["valor_proyectado"] == 25 and f["pct_proyectado_vs_meta"] == pytest.approx(25 / 30)
+    assert pd.isna(m.loc["MP9900101029901002", "pct_proyectado_vs_meta"])    # sin proyección: no se inventa
+    h = S.detectar_hallazgos(m.reset_index())
+    assert ("proyeccion_bajo_meta", "MP9900101019901001") in set(zip(h["regla"], h["llave"]))
+
+
+def test_proyeccion_menor_que_el_resultado_es_incoherente_en_acumulados(datos):
+    pi, ce, dr = datos
+    pi = pi.copy()
+    pi.loc[pi["codigo_mp"] == "MP9900101019901001", "valor_proyectado"] = 5.0     # resultado ya es 12
+    h = S.detectar_hallazgos(S.construir_matriz(pi, ce, dr))
+    assert ("proyeccion_menor_que_resultado", "MP9900101019901001") in set(zip(h["regla"], h["llave"]))

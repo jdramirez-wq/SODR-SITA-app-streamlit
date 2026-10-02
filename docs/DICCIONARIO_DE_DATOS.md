@@ -48,7 +48,7 @@ Metas de producto (MP) de UNA entidad con su programación vigente y el resultad
 | 13 | `Constante (K)` | `constante_k` | decimal | no | Constante de la fórmula. |  |
 | 14 | `Fórmula` | `formula` | texto | no | Fórmula del indicador, p. ej. 'V1' o '((V1+V2)/720)*100'. |  |
 | 15 | `Resultado` | `resultado` | decimal | no | Último reporte ACUMULADO de la dependencia (✅ confirmado). | Dato clave de seguimiento. En los datos es el acumulado de la VIGENCIA en curso (menor que los logros previos sumados en metas acumuladas), no del cuatrienio. |
-| 16 | `Valor Proyectado` | `valor_proyectado` | decimal | sí | Proyección reportada por la entidad. | Por confirmar su significado. |
+| 16 | `Valor Proyectado` | `valor_proyectado` | decimal | sí | Proyección de la dependencia sobre cómo cerrará la meta en la vigencia (✅ confirmado). | Campo creado por el operador de EVAPLAN hacia nov-2025 para anticipar el cierre de las MP (requerimiento de la Gobernación). Sigue existiendo en 2026, pero puede venir vacío. Está en la misma escala que la meta de la vigencia. |
 | 17 | `PG` | `valor_pg` | valor_np (2 columnas) | no | Meta del cuatrienio (Programación de Gobierno) vigente. | Reprogramada; puede diferir de 'pi_pg' (PI original). |
 | 18 | `2024` | `valor_2024` | valor_np (2 columnas) | no | Valor de la vigencia 2024. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
 | 19 | `2025` | `valor_2025` | valor_np (2 columnas) | no | Valor de la vigencia 2025. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
@@ -108,7 +108,7 @@ Metas de resultado (MR) de UNA entidad con programación vigente y resultado rep
 | 12 | `Constante (K)` | `constante_k` | decimal | no | Constante de la fórmula. |  |
 | 13 | `Fórmula` | `formula` | texto | no | Fórmula del indicador. |  |
 | 14 | `Resultado` | `resultado` | decimal | no | Último reporte ACUMULADO de la dependencia (✅ confirmado). |  |
-| 15 | `Valor Proyectado` | `valor_proyectado` | decimal | sí | Proyección reportada. |  |
+| 15 | `Valor Proyectado` | `valor_proyectado` | decimal | sí | Proyección de cierre de la vigencia (puede venir vacío). |  |
 | 16 | `PG` | `valor_pg` | valor_np (2 columnas) | no | Meta del cuatrienio (Programación de Gobierno) vigente. | Reprogramada; puede diferir de 'pi_pg' (PI original). |
 | 17 | `2024` | `valor_2024` | valor_np (2 columnas) | no | Valor de la vigencia 2024. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
 | 18 | `2025` | `valor_2025` | valor_np (2 columnas) | no | Valor de la vigencia 2025. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
