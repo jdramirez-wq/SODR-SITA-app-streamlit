@@ -53,17 +53,18 @@ Se calculan **hechos**, sin umbrales: no existe un cronograma único de ejecuci�
 | S6 | Meta del Plan Indicativo sin reporte en EVAPLAN | ✅ ❓ | advertencia | `sin_reporte` |
 | S7 | Avance (Resultado > 0) con obligaciones = 0 y sin mencionar gestión/donación/cofinanciación/sin costo | ✅ | advertencia | `avance_sin_ejecucion_financiera` |
 | S8 | Lo mismo pero la narrativa sí menciona gestión (verificar soporte) | ✅ | info | `avance_sin_ejecucion_con_gestion` |
-| S9 | Obligaciones > 0, Resultado = 0 y sin justificación (ni en Análisis del logro ni en Dificultades) | ✅ | advertencia | `ejecucion_sin_avance_sin_explicacion` |
-| S9b | Resultado = 0 sin justificación (Análisis o Dificultades), con o sin obligaciones | ✅ ❓ | advertencia | `avance_cero_sin_justificacion` |
-| S10 | Actividades con obligaciones y sin avance físico: sin observación = advertencia; con observación = informativo | ✅ | advertencia / info | `actividades_con_obligaciones_sin_avance`, `actividades_sin_avance_con_observacion` |
+| S9 | Obligaciones > 0, Resultado = 0 y sin justificación **en Dificultades** (lineamiento de la líder del equipo; con el criterio flexible también sirve el Análisis del logro) | ✅ | advertencia | `ejecucion_sin_avance_sin_explicacion` |
+| S9b | Resultado = 0 sin justificación en Dificultades, con o sin obligaciones (flexible: también Análisis) | ✅ | advertencia | `avance_cero_sin_justificacion` |
+| S9c | Resultado = 0 con Principal logro o Análisis (según el lineamiento un avance 0 se explica en Dificultades). Solo en el criterio estricto | ✅ | info | `narrativa_con_resultado_cero` |
+| S10 | **Registros** presupuestales con obligaciones y sin avance físico: sin observación = advertencia; con observación = informativo | ✅ | advertencia / info | `registros_con_obligaciones_sin_avance`, `registros_sin_avance_con_observacion` |
 | S11 | Avance (resultado > 0) sin Principal Logro o Análisis | ✅ | advertencia | `resultado_sin_narrativa` |
 | S12 | Reporte con avance pero sin meta programada (NP o 0); resultado supera la meta | ✅ | advertencia / info | `reporte_sin_meta_programada`, `resultado_supera_meta_vigencia` |
 | S12b | Proyección de cierre de la dependencia (`Valor Proyectado`) por debajo de la meta de la vigencia; o menor que el resultado ya acumulado en metas acumulativas | ✅ | advertencia | `proyeccion_bajo_meta`, `proyeccion_menor_que_resultado` |
 | S13 | Meta sin actividades en Centralizadas | — | info | `sin_plan_de_accion` |
-| S15 | Meta de la vigencia del export de EVAPLAN distinta a la de Drive (se calcula con la de Drive) | ✅ | advertencia | `meta_vigencia_difiere_del_export` |
+| S15 | Meta de la vigencia del export de EVAPLAN distinta a la de Drive: **prevalece Drive** (el operador de EVAPLAN a veces no lo tiene actualizado) | ✅ | advertencia | `meta_vigencia_difiere_del_export` |
 | S14 | Encabezado del año cerrado sin `VAL ALC` (o abierto con `VAL ALC`) en Drive | ✅ | advertencia | `vigencia_*_marca_logro` |
 
-**Metas compartidas (nota SODR 1-oct):** el PA lo reporta el centro gestor y el PI solo el coordinador de la meta. Por eso "meta sin actividades" y "avance sin obligaciones" pueden deberse a proyectos de otra dependencia: son señales para validar con ella, no errores. El indicador "con alertas" cuenta solo advertencias y errores, no los informativos.
+**Metas compartidas (nota SODR 1-oct):** el PA lo reporta el centro gestor y el PI solo el coordinador de la meta. "Meta sin actividades" y "avance sin obligaciones" pueden deberse a proyectos de otra dependencia, pero la **suposición de base** es que quien reporta conoce ese avance y lo indica en su narrativa: por eso siguen siendo avisos y no se excusan. El indicador "con alertas" cuenta solo advertencias y errores, no los informativos.
 
 *Lo que se deja al LLM/analista:* si el avance es "suficiente", la gravedad de cada alerta, la desconexión
 jerárquica (se entrega la brecha numérica `meta vs actividades`, no un veredicto), la calidad narrativa y el dictamen.

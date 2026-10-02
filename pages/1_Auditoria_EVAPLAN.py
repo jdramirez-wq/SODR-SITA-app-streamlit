@@ -64,6 +64,10 @@ vigencia_manual = st.sidebar.number_input(
          "primer año que aún no está marcado como logro.")
 con_hechos = st.sidebar.checkbox("Incluir 'hechos verificados' en el prompt", value=True,
                                  help="Indica al LLM que las cifras ya fueron calculadas por código.")
+criterio_flexible = st.sidebar.checkbox(
+    "Criterio flexible: aceptar también el Análisis del logro como justificación de un avance 0", value=False,
+    help="Por defecto (lineamiento del equipo) un avance 0 se justifica en Dificultades. Marca esta casilla solo si el "
+         "equipo decide ser flexible.")
 url_drive = _url_drive()
 st.sidebar.markdown("**Plan Indicativo (Drive)**")
 st.sidebar.write("✅ Conectado por enlace" if url_drive else "⚠️ Sin enlace configurado (secreto `URL_DRIVE_PLAN_INDICATIVO`)")
@@ -92,7 +96,7 @@ if f_pi and f_ce and st.button("🚀 Procesar", type="primary"):
                 except Exception as e:
                     st.warning(f"No se pudo leer Drive ({type(e).__name__}). Se continúa sin él: no se detectarán "
                                "metas sin reporte.")
-            st.session_state["resultado"] = pipeline.ejecutar(f_pi, f_ce, drive, vigencia_manual or None)
+            st.session_state["resultado"] = pipeline.ejecutar(f_pi, f_ce, drive, vigencia_manual or None, criterio_flexible)
     except EsquemaError as e:
         st.session_state.pop("resultado", None)
         st.error(f"**Un archivo no tiene la estructura esperada.** ¿Subiste cada archivo en su lugar?\n\n{e}")

@@ -15,6 +15,11 @@ Cuando se resuelva una, se mueve a [REGLAS_DE_NEGOCIO.md](REGLAS_DE_NEGOCIO.md) 
 | `Resultado` ¿de la vigencia o del cuatrienio? | **Acumulado de la vigencia** | Avance del cuatrienio = logro de vigencias cerradas + resultado |
 | `Valor Proyectado` | Campo creado por el operador de EVAPLAN hacia nov-2025 para que la Gobernación anticipara el cierre de las MP; sigue en 2026, puede venir vacío y quizá se retome el próximo mes | Columnas `% proyectado vs meta`, alertas `proyeccion_bajo_meta` y `proyeccion_menor_que_resultado` |
 | ¿Incluir metas de resultado (MR)? | **No por ahora**: solo metas de producto | Hoja de ruta (fuera de alcance) |
+| Justificación de un avance 0 | Según la líder del equipo debe estar en **Dificultades**; a veces se es flexible, pero esa decisión es posterior | Criterio **estricto por defecto**; casilla "criterio flexible" (también acepta Análisis del logro) |
+| Metas compartidas | La suposición de base es que **quien reporta está enterado** del avance de las dependencias con las que comparte la meta | El aviso se mantiene: quien reporta debe indicarlo en la narrativa (no se excusa) |
+| Meta distinta entre el export y Drive | **Prevalece Drive**: el operador de EVAPLAN a veces no lo tiene actualizado | Ya funciona así; el aviso lo dice |
+| Varios registros por actividad | Son registros presupuestales; **no hay forma sencilla de agrupar por actividad** (el código no coincide siempre y a veces difiere a propósito por una palabra o un punto) | La unidad es el **registro**; se quitó el conteo de "actividades" |
+| ¿Z023 consolidado en una carpeta que la app lea? | **No**: contiene información que no debe ser pública | Ver "Z023" abajo |
 
 ## Para confirmar (rápidas)
 1. **MR 2025:** en la hoja MR del Drive el encabezado 2025 no dice `VAL ALC`. ¿Falta cargar el logro 2025 de las
@@ -23,27 +28,25 @@ Cuando se resuelva una, se mueve a [REGLAS_DE_NEGOCIO.md](REGLAS_DE_NEGOCIO.md) 
    (por ejemplo, Flujo con 2027 = 0 y PG > 0). ¿Son errores de digitación o la regla es otra?
 
 ## Surgidas al probar con 10 dependencias reales
-3. **Promedio de avance con varios registros por actividad:** una actividad puede tener varios registros (ID) con distinto
-   avance (p. ej. 0 % y 7.7 %). Hoy el promedio cuenta cada registro (como la página original). ¿Debe promediarse por
-   actividad? ¿Qué valor se toma si los registros difieren?
-4. **Justificación del avance 0:** el prompt la pide en *Dificultades* y la circular del 3.er trimestre en *Análisis del
-   logro*; en los datos, Mujer usa Análisis y Vivienda Dificultades. La herramienta acepta cualquiera de los dos. ¿Se
-   mantiene así?
-5. **Actividades con avance 0 y observación vacía (`.`):** la circular prohíbe los vacíos. ¿Activamos una alerta por
-   actividad? Hoy solo se alerta si además hay obligaciones.
-6. **Metas compartidas:** ¿integramos el *Z023 consolidado* para saber qué proyectos de otras dependencias aportan a
-   cada meta? Eliminaría los falsos avisos de "avance sin obligaciones" y "meta sin actividades".
+3. **Actividades con avance 0 y observación vacía (`.`):** la circular prohíbe los vacíos. ¿Activamos una alerta por
+   registro? Hoy solo se alerta si además hay obligaciones.
+4. **Z023 consolidado:** serviría para saber qué proyectos de otras dependencias aportan a cada meta. Como no puede
+   quedar en el repositorio ni en una carpeta de lectura abierta, la propuesta es **subirlo en cada sesión** (cuarto
+   cuadro opcional, como los archivos de EVAPLAN: se usa en memoria y no se guarda). Para diseñarlo hace falta ver su
+   estructura: ¿pueden indicarme en Drive el archivo para leerlo solo aquí, durante el análisis, sin copiarlo al repo?
 
 ## Decisiones de producto
-7. **Prompt:** el bloque opcional "Hechos verificados" queda **activado por defecto** (se puede desmarcar en la barra
+5. **Prompt:** el bloque opcional "Hechos verificados" queda **activado por defecto** (se puede desmarcar en la barra
    lateral). Se revisa cuando el equipo compare respuestas del LLM con y sin el bloque.
-8. **Periodo de revisión:** hoy solo cambia el texto del prompt. ¿Se muestra además una referencia neutral de
+6. **Periodo de revisión:** hoy solo cambia el texto del prompt. ¿Se muestra además una referencia neutral de
    tiempo transcurrido (25 %, 50 %…) junto al avance? No sería umbral: solo contexto.
-9. **Histórico:** ¿interesa guardar cada corte para ver la evolución de una dependencia?
+7. **Histórico:** ¿interesa guardar cada corte para ver la evolución de una dependencia?
 
 ## Seguridad
-10. **Repo público:** Streamlit Community Cloud indica que **sí admite repos privados** (pide un permiso adicional de
+8. **Repo público:** Streamlit Community Cloud indica que **sí admite repos privados** (pide un permiso adicional de
    GitHub, `repo`), aunque no pude abrir su documentación oficial para confirmarlo ni sus límites vigentes.
    ¿Pueden probar a pasar el repo a privado en `share.streamlit.io` (Settings → Repository)?
-11. **Libro de Drive:** ¿está compartido como "cualquiera con el enlace"? Su ID sigue en `pages/2_POAI_2027.py`.
-    La página de seguimiento ya lee el enlace de un secreto (`URL_DRIVE_PLAN_INDICATIVO`), no del código.
+9. **Libro de Drive del Plan Indicativo:** para que la app lo lea por enlace debe estar compartido como "cualquiera con el
+   enlace". Dado que hay información que no debe ser pública, ¿el Plan Indicativo sí puede estar así? Si no, la
+   alternativa es una cuenta de servicio de Google (gratuita): el libro se comparte solo con ella y sus credenciales
+   viven en los secretos de Streamlit, nunca en el repositorio.

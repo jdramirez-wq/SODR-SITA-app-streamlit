@@ -24,7 +24,8 @@ class Resultado:
     usa_drive: bool = False
 
 
-def ejecutar(pi_mp_evaplan, centralizadas, drive=None, vigencia: int | None = None) -> Resultado:
+def ejecutar(pi_mp_evaplan, centralizadas, drive=None, vigencia: int | None = None,
+             criterio_flexible: bool = False) -> Resultado:
     """`drive`: ruta, URL de exportación xlsx o archivo del Plan Indicativo (hoja MP). Opcional.
 
     Sin Drive el seguimiento funciona, pero no puede detectar metas sin reporte ni validar contra la programación.
@@ -43,10 +44,10 @@ def ejecutar(pi_mp_evaplan, centralizadas, drive=None, vigencia: int | None = No
                           "Se continúa solo con los archivos de EVAPLAN.")
     if dr is not None and vigencia is None:
         vigencia = V.inferir_vigencia(dr)
-    matriz = S.construir_matriz(pi, ce, dr, vigencia)
+    matriz = S.construir_matriz(pi, ce, dr, vigencia, criterio_flexible)
     vigencia = int(matriz["vigencia"].iloc[0]) if len(matriz) else (vigencia or 0)
     calidad = V.validar_todo(pi_mp_evaplan=pi, centralizadas=ce, drive_mp=dr, vigencia=vigencia)
-    return Resultado(vigencia=vigencia, matriz=matriz, hallazgos=S.detectar_hallazgos(matriz), calidad=calidad,
+    return Resultado(vigencia=vigencia, matriz=matriz, hallazgos=S.detectar_hallazgos(matriz, criterio_flexible), calidad=calidad,
                      resumen=S.resumen(matriz), avisos=avisos, usa_drive=dr is not None)
 
 

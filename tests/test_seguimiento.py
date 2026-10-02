@@ -54,7 +54,7 @@ def test_presupuesto_y_avance_de_actividades_por_proyecto(matriz):
     assert f["pct_ejecucion_financiera"] == pytest.approx(0.6)
     assert f["avance_actividades"] == pytest.approx(0.125)         # (25 % + 0 %) / 2
     assert f["avance_por_proyecto"] == "PI99-000001: 12.5 %"
-    assert f["n_proyectos"] == 1 and f["n_actividades"] == 2
+    assert f["n_proyectos"] == 1 and f["n_registros"] == 2
     assert not matriz.loc["MP9900202019902001", "tiene_plan_de_accion"]
 
 
@@ -79,9 +79,10 @@ def test_hallazgos_sembrados(matriz, datos):
     pares = set(zip(h["regla"], h["llave"]))
     assert ("sin_reporte", "MP9900202039902003") in pares
     assert ("sin_plan_de_accion", "MP9900202019902001") in pares
-    assert ("actividades_con_obligaciones_sin_avance", "MP9900202029902002") in pares
-    assert ("narrativa_con_resultado_cero", "MP9900202019902001") not in pares      # regla retirada: cada dependencia
-    # justifica el avance 0 en Análisis o en Dificultades; esta meta tiene ambos
+    assert ("registros_con_obligaciones_sin_avance", "MP9900202029902002") in pares
+    # Criterio por defecto: el avance 0 se justifica en Dificultades (esta meta la tiene) y se avisa, como
+    # informativo, que además trae logro/análisis.
+    assert ("narrativa_con_resultado_cero", "MP9900202019902001") in pares
     assert not {r for r, _ in pares} & {"avance_cero_sin_justificacion", "ejecucion_sin_avance_sin_explicacion"}
 
 
@@ -103,6 +104,12 @@ def test_no_se_inventan_umbrales(matriz):
     solo hechos. La única alerta de ese estilo es la objetiva (obligaciones > 0 sin avance de actividades)."""
     reglas = set(S.detectar_hallazgos(matriz.reset_index())["regla"])
     assert not any("umbral" in r or "critic" in r or "semaforo" in r for r in reglas)
+
+
+def test_pipeline_pasa_el_criterio_flexible():
+    est, fle = pipeline.ejecutar(PI, CE, DR), pipeline.ejecutar(PI, CE, DR, criterio_flexible=True)
+    assert "narrativa_con_resultado_cero" in set(est.hallazgos["regla"])
+    assert "narrativa_con_resultado_cero" not in set(fle.hallazgos["regla"])
 
 
 def test_pipeline_completo_y_reportes():
@@ -153,9 +160,10 @@ def test_proyeccion_menor_que_el_resultado_es_incoherente_en_acumulados(datos):
     assert ("proyeccion_menor_que_resultado", "MP9900101019901001") in set(zip(h["regla"], h["llave"]))
 
 
-def test_actividad_con_varios_registros_cuenta_una_vez_como_actividad(matriz):
+def test_no_se_agrupa_por_actividad_se_cuentan_registros(matriz):
+    """El código de actividad no es confiable para agrupar: la unidad es el registro presupuestal."""
     f = matriz.loc["MP9900202029902002"]
-    assert f["n_registros"] == 3 and f["n_actividades"] == 2
+    assert f["n_registros"] == 3 and "n_actividades" not in matriz.columns
     assert f["ppto_definitivo"] == 1_100_000_000                    # los presupuestos de los registros se suman
 
 
@@ -170,8 +178,8 @@ def test_obligaciones_sin_avance_bajan_a_info_si_la_observacion_lo_explica(datos
     ce.loc[ce["codigo_mp"] == "MP9900202029902002", "observacion"] = "El entregable está para el mes de noviembre."
     h = _hallazgos(datos, ce=ce)
     reglas = set(zip(h["regla"], h["severidad"], h["llave"]))
-    assert ("actividades_sin_avance_con_observacion", "info", "MP9900202029902002") in reglas
-    assert "actividades_con_obligaciones_sin_avance" not in set(h["regla"])
+    assert ("registros_sin_avance_con_observacion", "info", "MP9900202029902002") in reglas
+    assert "registros_con_obligaciones_sin_avance" not in set(h["regla"])
 
 
 def test_registro_sin_cantidad_programada_no_genera_alerta_de_avance(datos):
@@ -182,25 +190,36 @@ def test_registro_sin_cantidad_programada_no_genera_alerta_de_avance(datos):
     assert "financiero_sin_fisico" not in set(V.ejecucion_financiera_vs_fisica(ce)["regla"])
 
 
-@pytest.mark.parametrize("analisis, dificultades, alerta", [
-    (None, None, True),                       # sin ninguna justificación
-    ("Se explica en el análisis", None, False),     # como lo hace una dependencia
-    (None, "Etapa precontractual", False),          # como lo hace otra
+@pytest.mark.parametrize("analisis, dificultades, flexible, alerta", [
+    (None, None, False, True),                        # sin ninguna justificación
+    ("Se explica en el análisis", None, False, True),     # por defecto debe estar en Dificultades
+    ("Se explica en el análisis", None, True, False),     # criterio flexible: el análisis también sirve
+    (None, "Etapa precontractual", False, False),         # Dificultades siempre sirve
+    (None, "Etapa precontractual", True, False),
+    (None, None, True, True),
 ])
-def test_resultado_cero_exige_justificacion_en_analisis_o_dificultades(datos, analisis, dificultades, alerta):
+def test_resultado_cero_se_justifica_en_dificultades_y_opcionalmente_en_analisis(datos, analisis, dificultades, flexible, alerta):
     pi, ce, dr = datos
     pi = pi.copy()
     i = pi.index[pi["codigo_mp"] == "MP9900202019902001"][0]          # resultado 0, sin plan de acción
     pi.loc[i, ["analisis_logro", "dificultades_gestiones", "principal_logro"]] = [analisis, dificultades, pd.NA]
-    h = S.detectar_hallazgos(S.construir_matriz(pi, ce, dr))
+    h = S.detectar_hallazgos(S.construir_matriz(pi, ce, dr, criterio_flexible=flexible), flexible)
     assert ("avance_cero_sin_justificacion" in set(h["regla"])) is alerta
+
+
+def test_la_nota_de_logro_con_resultado_cero_solo_aplica_en_el_criterio_estricto(datos):
+    pi, ce, dr = datos
+    estricto = S.detectar_hallazgos(S.construir_matriz(pi, ce, dr))
+    flexible = S.detectar_hallazgos(S.construir_matriz(pi, ce, dr, criterio_flexible=True), True)
+    assert "narrativa_con_resultado_cero" in set(estricto["regla"])
+    assert "narrativa_con_resultado_cero" not in set(flexible["regla"])
 
 
 def test_resultado_cero_con_obligaciones_y_sin_justificacion_usa_la_regla_especifica(datos):
     pi, ce, dr = datos
     pi = pi.copy()
     i = pi.index[pi["codigo_mp"] == "MP9900101019901001"][0]
-    pi.loc[i, ["resultado", "analisis_logro", "dificultades_gestiones", "principal_logro"]] = [0.0, pd.NA, pd.NA, pd.NA]
+    pi.loc[i, ["resultado", "analisis_logro", "dificultades_gestiones", "principal_logro"]] = [0.0, "Análisis", pd.NA, pd.NA]
     h = S.detectar_hallazgos(S.construir_matriz(pi, ce, dr))
     reglas = set(h[h["llave"] == "MP9900101019901001"]["regla"])
     assert "ejecucion_sin_avance_sin_explicacion" in reglas and "avance_cero_sin_justificacion" not in reglas

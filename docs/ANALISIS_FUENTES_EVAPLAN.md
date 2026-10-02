@@ -123,8 +123,9 @@ coinciden. Lo que mostraron y se corrigió:
 El `ID` es único; el código de actividad se repite (hasta 4 filas) con distinto presupuesto y, a veces, distinto estado,
 avance y observación. Se había asumido `codigo_actividad` único y daba falsos **errores** en Paz y Vivienda. Ahora la
 llave es `ID`, se cuentan actividades y registros por separado y los presupuestos se suman.
-- ❓ Con varios registros por actividad el promedio de avance cuenta cada registro (como la página original). Ver
-  [PREGUNTAS_ABIERTAS.md](PREGUNTAS_ABIERTAS.md).
+- ✅ **Decisión del equipo:** no hay forma sencilla de agrupar por actividad (el código no coincide siempre y a veces
+  difiere a propósito por una palabra o un punto). La unidad de análisis es el **registro presupuestal**; el avance se
+  promedia por registro, como la página original.
 
 ### H9 · PA y PI tienen responsables distintos: hay metas compartidas ✅ (nota SODR del 1-oct)
 El PA (actividades) lo reporta el centro gestor del proyecto; el PI (metas) solo el coordinador de la meta, aunque la
@@ -138,10 +139,11 @@ En Mujer, 30 de 31 registros con obligaciones y sin avance traen una observació
 mes de octubre". Se separaron: **sin observación = advertencia; con observación = informativo**. Y solo cuentan si la
 actividad tiene cantidad programada en la vigencia (24 de 67 registros de Mujer no la tienen).
 
-### H11 · La justificación de un avance 0 se escribe en lugares distintos según la dependencia ✅
-Mujer la escribe en *Análisis del logro* (7 de 7 metas con resultado 0; ninguna en Dificultades); Vivienda en
-*Dificultades* (10 de 12). El prompt pide Dificultades y la circular del 3.er trimestre pide Análisis. La herramienta
-acepta **cualquiera de los dos**; se retiró la regla que penalizaba escribirla en Análisis.
+### H11 · La justificación de un avance 0: criterio de la líder y práctica real ✅
+Según la líder del equipo debe estar en *Dificultades* (a veces se es flexible, pero esa decisión es posterior). En los
+datos: Mujer la escribe en *Análisis del logro* (7 de 7 metas con resultado 0; ninguna en Dificultades) y Vivienda en
+*Dificultades* (10 de 12). Por eso el criterio **estricto es el valor por defecto** y existe una casilla "criterio
+flexible" que también acepta el Análisis. Efecto en Mujer: 7 metas con alertas en estricto, 1 en flexible.
 
 ### H12 · Con exports de junio y Drive de octubre aparecen diferencias reales de programación ✅
 En Vivienda, 2 metas tienen una meta 2026 distinta entre el export (junio) y Drive (octubre): el escenario de "export

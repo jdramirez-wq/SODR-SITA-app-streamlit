@@ -66,11 +66,17 @@ python scripts/generar_ejemplos.py      # regenera los archivos ficticios
 - `Resultado` = último reporte **acumulado de la vigencia**. `Valor Proyectado` = proyección de cierre de la
   dependencia (campo creado nov-2025; puede venir vacío; misma escala que la meta de la vigencia).
 - Alcance actual: solo **metas de producto** (MP). Las metas de resultado (MR) quedan fuera por ahora.
-- **Centralizadas:** cada fila es un REGISTRO presupuestal (llave `id_registro`); el código de actividad se repite. Se
-  cuentan actividades y registros por separado y los presupuestos se suman.
+- **Centralizadas:** cada fila es un REGISTRO presupuestal (llave `id_registro`); el código de actividad se repite. Los
+  presupuestos se suman y el avance se promedia por registro.
 - **PA ≠ PI:** el PA (Centralizadas) lo reporta el centro gestor del proyecto; el PI (metas) solo el coordinador de la meta.
   Hay metas compartidas: "meta sin actividades"/"avance sin obligaciones" pueden deberse a proyectos de otra dependencia.
-- La justificación de un avance 0 puede estar en *Análisis del logro* **o** en *Dificultades* (cada dependencia usa uno).
+- Un avance 0 se justifica en *Dificultades* (lineamiento de la líder del equipo). Existe `criterio_flexible` (casilla en la
+  página, apagada por defecto) que también acepta *Análisis del logro*; esa decisión es del equipo, no se cambia sola.
+- **Drive prevalece** sobre el export de EVAPLAN (el operador a veces no lo tiene actualizado).
+- **No agrupar por actividad**: el código de actividad no es confiable (varía a propósito). La unidad es el registro.
+- Quien reporta una meta compartida debe conocer el avance de las otras dependencias: los avisos no se excusan.
+- **Información no pública:** no guardar el Z023 consolidado ni datos similares en el repo ni en carpetas de lectura
+  abierta; se subirían por sesión (`st.file_uploader`) y solo se usan en memoria.
 - El indicador "con alertas" cuenta solo advertencias y errores; lo informativo no suma.
 - Avance de actividades: promediar **por proyecto de inversión** (lo exige el prompt), además del global.
 - Llave de entidad = **código** (9999), nunca el nombre. Llave de meta: `codigo_mp` (18 caracteres) /
