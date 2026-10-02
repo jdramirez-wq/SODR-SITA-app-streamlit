@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - name: Lint (errores reales)
+        run: ruff check .
+      - name: Compila todos los módulos
+        run: python -m compileall -q app.py pages
+      - name: Pruebas
+        run: |
+          if [ -d tests ]; then pytest; else echo "Aún no hay pruebas"; fi
