@@ -1,464 +1,223 @@
-import streamlit as st
-import pandas as pd
-import numpy as np
-from reportlab.lib.pagesizes import LETTER
-from reportlab.pdfgen import canvas
-from textwrap import wrap
+"""Seguimiento EVAPLAN: cruza lo reportado por la dependencia con el Plan Indicativo (Drive) y el Plan de Acción.
+
+La lógica vive en src/evaplan (probada con archivos de ejemplo). Esta página solo recoge archivos y dibuja.
+"""
 import io
+import os
+import urllib.request
 
-# Configuración de página de Streamlit para la Subpágina
-st.set_page_config(
-    page_title="Auditoría EVAPLAN",
-    page_icon="📊",
-    layout="wide"
-)
+import pandas as pd
+import streamlit as st
 
-# Ocultar menús de desarrollo de forma segura en la página de auditoría
-estilo_seguro_p1_css = """
-    <style>
-    /* Oculta la línea roja decorativa del header */
+from src.evaplan import pipeline, reportes
+from src.evaplan.lectura import EsquemaError
+from src.evaplan.prompts import PERIODOS, generar_prompt_sistema
+from src.evaplan.seguimiento import ETIQUETAS
+
+st.set_page_config(page_title="Seguimiento EVAPLAN", page_icon="📊", layout="wide")
+st.markdown(
+    """<style>
     div[data-testid="stHeader"] {background-color: transparent;}
-    /* Oculta el pie de página */
     footer {visibility: hidden;}
-    </style>
-"""
-st.markdown(estilo_seguro_p1_css, unsafe_allow_html=True)
-
-st.title("📊 Auditoría de Seguimiento a Planes de Desarrollo Territorial")
-st.write("Sube los archivos de Excel correspondientes para procesar, consolidar y descargar los resultados en formatos Excel y PDF.")
-
-# ============================================================
-# PERSISTENCIA EN EL ESTADO DE LA SESIÓN (SESSION STATE)
-# ============================================================
-# Inicialización de variables para que no se borren al interactuar o cambiar de página
-if "excel_data" not in st.session_state:
-    st.session_state["excel_data"] = None
-if "pdf_data" not in st.session_state:
-    st.session_state["pdf_data"] = None
-if "prompt_final" not in st.session_state:
-    st.session_state["prompt_final"] = None
-if "procesado_exitoso" not in st.session_state:
-    st.session_state["procesado_exitoso"] = False
-
-# ============================================================
-# CONFIGURACIÓN DEL PERIODO DE EVALUACIÓN
-# ============================================================
-st.sidebar.header("⚙️ Configuración de Auditoría")
-periodo_seleccionado = st.sidebar.selectbox(
-    "Selecciona el periodo del año a evaluar:",
-    [
-        "Revisión acumulada de primer trimestre",
-        "Revisión acumulada del Primer semestre",
-        "Revisión Acumulada de Tercer Semestre",
-        "Revisión Acumulada y Proyectada a Cierre de Vigencia",
-        "Revisión a Cierre de Vigencia"
-    ]
+    </style>""",
+    unsafe_allow_html=True,
 )
 
-# ============================================================
-# CONSTRUCCIÓN DINÁMICA DE PROMPTS
-# ============================================================
-def generar_prompt_sistema(periodo):
-    perfil_mision = """PERFIL Y MISIÓN DEL AGENTE
+st.title("📊 Seguimiento EVAPLAN al Plan de Desarrollo")
+st.write(
+    "Sube las descargas de **una dependencia** desde EVAPLAN. La herramienta las cruza con el Plan Indicativo "
+    "en Drive, calcula los hechos objetivos (avance, ejecución financiera, metas sin reporte) y deja listo el "
+    "material para el análisis. **No emite semáforos**: el juicio sigue siendo de quien revisa."
+)
 
-Actúa como BOT_SODR_EVAPLAN, mi Asesor Experto en Auditoría de Seguimiento a Planes de Desarrollo Territorial. Estás adscrito a la Subdirección de Ordenamiento y Desarrollo Regional (SODR) del Departamento Administrativo de Planeación de la Gobernación del Valle del Cauca.
 
-Tu misión es evaluar la calidad, coherencia y veracidad de los reportes de avance de las Metas de Producto (MP) y Metas de Resultado (MR) del PDD "Liderazgo que Transforma" 2024-2027.
+# ------------------------------------------------------------------ Drive
+def _url_drive() -> str | None:
+    """URL de exportación (xlsx) del Plan Indicativo. Va en Secrets de Streamlit, no en el código (repo público)."""
+    try:
+        url = st.secrets.get("URL_DRIVE_PLAN_INDICATIVO")
+    except Exception:  # sin archivo de secretos
+        url = None
+    return url or os.environ.get("URL_DRIVE_PLAN_INDICATIVO")
 
-Rol de Evaluador Crítico: No eres un transcriptor ni un resumidor automático. Eres un auditor técnico que debe juzgar si el reporte es suficiente, coherente, o si presenta alertas de inconsistencia. Debes emitir un dictamen claro sobre si la información reportada cumple los criterios para ser aprobada o si requiere devolución.
-"""
 
-    contexto_usuario = """
-MI CONTEXTO (USUARIO)
+@st.cache_data(ttl=600, show_spinner="Leyendo el Plan Indicativo de Drive…")
+def _descargar_drive(url: str) -> bytes:
+    with urllib.request.urlopen(url, timeout=60) as r:  # noqa: S310 (URL configurada por el administrador)
+        return r.read()
 
-Trabajo en la SODR. Mi función es auditar el avance del plan de desarrollo. Para esto, utilizo herramientas de procesamiento (Colab) que consolidan la información en un archivo integrado (CSV/Excel/PDF). Este archivo cruza:
-Meta Programada (PI): Lo que se debía hacer en la vigencia.
-Resultado Reportado: Lo que la entidad reporta como avance a la fecha de corte.
-Ejecución Financiera (PA): Recursos obligados de los proyectos de inversión asociados.
-Avance Actividades (PA): Promedio de ejecución física de las actividades que componen el proyecto. El valor presentado es decimal, es decir, ejemplo: 0.2 =20%
-Narrativa: Textos cualitativos (Principal Logro, Análisis del Logro, Dificultades).
-"""
 
-    reglas_oro = """
-BASE DE CONOCIMIENTO Y REGLAS DE ORO (EVAPLAN)
+# ------------------------------------------------------------------ barra lateral
+st.sidebar.header("⚙️ Configuración")
+periodo = st.sidebar.selectbox("Periodo de revisión (para el prompt):", PERIODOS)
+vigencia_manual = st.sidebar.number_input(
+    "Vigencia (0 = detectar automáticamente)", min_value=0, max_value=2027, value=0, step=1,
+    help="Se detecta con los encabezados 'VAL ALC' del Plan Indicativo en Drive: la vigencia en curso es el "
+         "primer año que aún no está marcado como logro.")
+con_hechos = st.sidebar.checkbox("Incluir 'hechos verificados' en el prompt", value=True,
+                                 help="Indica al LLM que las cifras ya fueron calculadas por código.")
+url_drive = _url_drive()
+st.sidebar.markdown("**Plan Indicativo (Drive)**")
+st.sidebar.write("✅ Conectado por enlace" if url_drive else "⚠️ Sin enlace configurado (secreto `URL_DRIVE_PLAN_INDICATIVO`)")
 
-Para evaluar, aplicarás estrictamente estas reglas:
+# ------------------------------------------------------------------ carga de archivos
+c1, c2, c3 = st.columns(3)
+with c1:
+    st.subheader("1. Plan Indicativo MP")
+    f_pi = st.file_uploader("'Informe de Plan Indicativo MP.xlsx' (EVAPLAN)", type=["xlsx"], key="up_pi")
+with c2:
+    st.subheader("2. Centralizadas")
+    f_ce = st.file_uploader("'Centralizadas.xlsx' (EVAPLAN)", type=["xlsx"], key="up_ce")
+with c3:
+    st.subheader("3. Plan Indicativo (Drive)")
+    f_dr = st.file_uploader("Opcional: libro del Plan Indicativo en .xlsx", type=["xlsx"], key="up_dr",
+                            help="Solo si no hay enlace configurado o Drive no responde.")
 
-1. Literalidad Estricta: Trabaja con los datos exactos que te suministro. Si falta información, un campo está vacío o dice "NaN", repórtalo inmediatamente como un hallazgo de "Dato Faltante".
+if f_pi and f_ce and st.button("🚀 Procesar", type="primary"):
+    try:
+        with st.spinner("Cruzando EVAPLAN, Plan Indicativo y Plan de Acción…"):
+            drive = f_dr
+            if drive is None and url_drive:
+                try:
+                    drive = io.BytesIO(_descargar_drive(url_drive))
+                except Exception as e:
+                    st.warning(f"No se pudo leer Drive ({type(e).__name__}). Se continúa sin él: no se detectarán "
+                               "metas sin reporte.")
+            st.session_state["resultado"] = pipeline.ejecutar(f_pi, f_ce, drive, vigencia_manual or None)
+    except EsquemaError as e:
+        st.session_state.pop("resultado", None)
+        st.error(f"**Un archivo no tiene la estructura esperada.** ¿Subiste cada archivo en su lugar?\n\n{e}")
+    except Exception as e:
+        st.session_state.pop("resultado", None)
+        st.error(f"Ocurrió un error al procesar los archivos: {type(e).__name__}: {e}")
 
-2. Sincronía Financiera (La Regla de Oro):
-Una Meta de Producto (MP) o una Actividad NO puede tener avance físico si no tiene ejecución financiera (Total Obligaciones > 0).
-La Excepción de Gestión: Si la entidad reporta avance físico sin recursos propios presupuestados, es OBLIGATORIO que el texto del logro o dificultad mencione explícitamente palabras como "Gestión", "Donación", "Cofinanciación" o "Sin costo", y referencie que se cuenta con el soporte. Si reportan avance físico sin dinero y sin esta justificación, se devuelve por Inconsistencia Físico-Financiera.
-La Excepción de Falta de Recursos: Si la entidad no reporta avance financiero y tampoco reporta avance de la Meta de Producto, se entiende que no se realizó por falta de programación de recursos, pero debe justificarlo en el campo de Dificultades, o se devuelve por Inconsistencia Físico-Financiera.
+res = st.session_state.get("resultado")
+if res is None:
+    st.info("💡 Sube **Plan Indicativo MP** y **Centralizadas** para empezar.")
+    st.stop()
 
-3. Sistema Integrado de Alertas (Detección de Errores de Digitación/Reporte):
-Activa tu radar para detectar estos errores lógicos comunes:
-Alerta Tipo 1 (Falso Positivo Físico): Avance físico de Actividad o MP > 0, pero Total Obligaciones = $0 (Sin justificación de gestión). Diagnóstico: Posible error de digitación o reporte sin soporte.
-Alerta Tipo 2 (Omisión de Reporte Físico): Total Obligaciones altas (> 30%), pero Avance Físico = 0, y en las 'Dificultades', al reportar MP, NO explican que el proyecto está en etapa meramente contractual o precontractual. Esta situación es crítica para las ACTIVIDADES, pues la ejecución financiera debe ir acompañada de avance físico; en cambio, para los productos sí es posible que haya avance financiero y se reporte el avance físico en 0 pues no se ha consolidado la entrega del bien o servicio. Diagnóstico: Ejecutaron recursos pero olvidaron reportar el avance físico asociado.
-Alerta Tipo 3 (Desconexión Jerárquica): Meta de Producto reporta avance muy alto (ej. 100%), pero el 'Promedio Avance Actividades' es críticamente bajo (ej. < 30%). Diagnóstico: Inconsistencia entre el proyecto (PA) y la meta (PI). Para el promedio de actividades es importante distinguir y promediar solo las actividades de 1 proyecto de inversión. Esta situación es un reporte inconsistente que debería tener alguna explicación al cotejar el reporte cualitativo de las actividades y el reporte cualitativo de la MP; por ejemplo, podría ser que una MP tiene 2 proyectos que contribuyen al cumplimiento, 1 de los cuales presenta avance coherente en sus actividades y productos, mientras que el otro no.
+# ------------------------------------------------------------------ resultados
+for aviso in res.avisos:
+    st.warning(aviso)
+if not res.usa_drive:
+    st.warning("Sin el Plan Indicativo de Drive no se detectan las **metas sin reporte** ni se valida la "
+               "programación. La vigencia se tomó del año actual.")
 
-4. Calidad Narrativa y Veracidad:
-Compara el número del "Resultado" contra el detalle del "Principal Logro". ¿La narrativa describe CÓMO se lograron las unidades reportadas? (Ej: Si el resultado dice 50, pero la narrativa solo describe 11, califica como "Narrativa Insuficiente").
-Logro: Debe describir QUÉ se hizo para justificar el número de avance en el periodo evaluado. El logro principal se refiere a un texto cualitativo conciso que dé cuenta del principal logro alcanzado por la dependencia en el cumplimiento de la MP. No debe ser excesivamente detallado, pero SI debe comunicar lo hecho. Textos genéricos ("se avanzó según lo planeado") son causal de devolución.. Este logro resumido es el que se suele usar en los informes consolidados o estrategias de comunicaciones para informar a la ciudadanía sobre lo que se hace en la entidad.
-Análisis: Debe detallar CÓMO y DÓNDE (municipios, grupos poblacionales). Textos genéricos ("se avanzó según lo planeado") son causal de devolución. Este apartado requiere mayor rigor técnico, pues la idea es que el enlace de SODR pueda leer y comprender con mayor grado de detalle en qué consiste en valor de avance reportado para la MP y cómo se interpreta ese valor. Por ejemplo, si la MP es de asistencias técnicas y se reportan 6 de 12 realizadas, se esperaría que haya una breve contextualización: dónde se realizaron las asistencias, con qué tipo de público o a qué entidades se enfocó, de qué temas se trataba, etc.
-Dificultades: Especialmente en cortes trimestrales (donde el avance físico puede ser bajo), es OBLIGATORIO usar el campo de dificultades para explicar si los retrasos son normativos, contractuales o de planeación. Este campo es de apoyo para que la dependencia explique situaciones que afectan el cumplimiento.
-Nota: Si una MP no tiene avance físico (reporte in 0), no debería tener reporte de principal logro o análisis de logro, sino de dificultades.
-"""
+m = res.matriz
+R = res.resumen
+st.caption(f"Vigencia analizada: **{res.vigencia}** · Periodo del prompt: {periodo}")
+k = st.columns(5)
+k[0].metric("Metas en el Plan Indicativo", R["metas_en_plan_indicativo"])
+k[1].metric("Reportadas en EVAPLAN", R["metas_reportadas"])
+k[2].metric("Sin reporte", R["metas_sin_reporte"])
+k[3].metric("Con alertas objetivas", R["metas_con_alertas"])
+k[4].metric("% ejecución financiera", f"{R['ppto_obligaciones'] / R['ppto_definitivo'] * 100:.1f} %"
+            if R["ppto_definitivo"] else "—")
 
-    estructura_salida = """
-ESTRUCTURA DE ANÁLISIS POR META (TU FLUJO DE PENSAMIENTO)
-Para cada meta que analices, ejecuta mentalmente estas fases antes de emitir tu respuesta:
-FASE 1: Mapeo Temporal y Semáforo de Desviación
-FASE 2: Evaluación de Coherencia Integral (El Juicio)
-FASE 3: Retroalimentación Dirigida (Feedback Técnico)
+tab_res, tab_mat, tab_hal, tab_cal, tab_out = st.tabs(
+    ["Resumen", "Matriz por meta", "Hallazgos", "Calidad de datos", "Descargas y prompt"])
 
-INSTRUCCIONES DE SALIDA (FORMATO ESTRICTO DE RESPUESTA)
-Espera mi instrucción para procesar cada bloque de metas. Tu respuesta por cada meta debe seguir estrictamente este formato Markdown:
 
-🔎 Revisión Técnica: [CÓDIGO DE LA META]
-Descripción de Meta
-Comportamiento del Indicador
-1. Semáforo de Consistencia (Corte: [Periodo]):
-Meta Vigencia: [Valor] | Avance Reportado: [Valor] | % Avance: [Cálculo%]
-Avance Promedio Actividades (PA): [X%]
-Ejecución Financiera (Obligaciones): $[Valor]
-Estado: [🟢 CONSISTENTE / 🟡 ALERTA DE REVISIÓN / 🔴 INCONSISTENCIA CRÍTICA]
+def _vista(df: pd.DataFrame) -> pd.DataFrame:
+    """Copia para mostrar: fracciones como porcentaje y nombres legibles."""
+    d = df.copy()
+    for c in ("pct_avance_vigencia", "pct_avance_pg", "pct_ejecucion_financiera", "avance_actividades",
+              "brecha_meta_vs_actividades"):
+        if c in d:
+            d[c] = d[c].astype("Float64") * 100
+    return d
 
-2. Análisis y Sistema de Alertas:
-[Lista aquí los hallazgos técnicos derivados de la Fase 2. Utiliza las tipologías de alertas definidas. Sé duro y directo.]
 
-3. Veredicto y Retroalimentación:
-Dictamen Sugerido: [APROBADA] o [DEVUELTA]
-Feedback Técnico para la Entidad (Leer críticamente para enviar como observación):
-Redacta aquí un párrafo formal, institucional y respetuoso dirigido al responsable. Debe contener:
-1. Identificación clara del error o vacío técnico.
-2. Requerimiento específico para subsanar el reporte in EVAPLAN.
+PCT = {c: st.column_config.NumberColumn(ETIQUETAS[c].replace(" (0-1)", ""), format="%.1f %%")
+       for c in ("pct_avance_vigencia", "pct_avance_pg", "pct_ejecucion_financiera", "avance_actividades",
+                 "brecha_meta_vs_actividades")}
+DINERO = {c: st.column_config.NumberColumn(ETIQUETAS[c], format="$ %,.0f")
+          for c in ("ppto_definitivo", "ppto_obligaciones", "ppto_disponible")}
 
-Ten en cuenta: Cuida la precisión de la terminología usada, por ejemplo: Las obligaciones financieras son equivalentes a ejecución financiera, sin embargo, no son lo mismo que "Presupuesto Comprometido".
-
-INSTRUCCIÓN DE INICIO:
-Si has asimilado todas estas reglas, comprendes la importancia de la temporalidad, y estás listo para aplicar el Sistema Integrado de Alertas y la evaluación narrativa cruzada, responde ÚNICAMENTE con el siguiente texto:
-"Entendido. Soy BOT_SODR_EVAPLAN, tu auditor técnico experto. He configurado la temporalidad y el sistema de alertas. Por favor, indícame el Periodo de Corte y carga los datos de las metas o el archivo integrado para iniciar la auditoría rigurosa."
-"""
-
-    if periodo == "Revisión acumulada de primer trimestre":
-        bloque_config = """
-[BLOQUE DE CONFIGURACIÓN DE LA REVISIÓN]
-Nota para el GEM: El usuario te indica que el periodo de revisión corresponde al Primer Trimestre de la vigencia. Adapta tu juicio a esta temporalidad.
-Periodo de Corte Actual: Primer Trimestre de 2026 (Q1 2026).
-
-Lógica de Temporalidad: Al ser un reporte trimestral parcial, no se exige el 100% del cumplimiento final de la meta anual. Se evalúa que el avance reportado (físico y financiero) sea coherente con los primeros meses del año. Un reporte de 100% en Q1 debe ser revisado con extrema lupa, y un reporte de 0% con alta ejecución financiera requiere justificación de etapa precontractual.
-Aclaración: Si en reportes parciales se registra 100% de avance, la descripción cualitativa debe ayudar a entender cómo se consiguió ese nivel de avance. También se debería aclarar que la meta busca un sostenimiento o continuidad en el producto (bien o servicio) que está entregando, de modo que, si ya alcanzó el 100% en Q1 (por ejemplo), pues se va a mantener ese nivel de entrega; o si por el contrario, ya no se va a entregar nada más. 
-"""
-    elif periodo == "Revisión acumulada del Primer semestre":
-        bloque_config = """
-[BLOQUE DE CONFIGURACIÓN DE LA REVISIÓN]
-Nota para el GEM: El usuario te indica que el periodo de revisión corresponde al Primer Semestre acumulado. Adapta tu juicio a esta temporalidad de mitad de año.
-Periodo de Corte Actual: Primer Semestre de 2026 (Q2 2026).
-
-Lógica de Temporalidad: Al ser un reporte acumulado a mitad de año (Corte a Junio), se espera una ejecución física cercana al 40%-50% o una justificación contractual clara si es menor. Para los casos donde en Q2 ya se alcanzó el valor esperado del 100% anual y ya no se va a entregar más producto, es un dato crítico porque supone que ya no se debería ejecutar más recurso (contratar para la ejecución de actividades ligadas a esa meta) a través de esa MP. Este es un dato relevante que debe hacerse notar para que lo tengan en cuenta los enlaces SODR.
-"""
-    elif periodo == "Revisión Acumulada de Tercer Semestre":
-        bloque_config = """
-[BLOQUE DE CONFIGURACIÓN DE LA REVISIÓN]
-Nota para el GEM: El periodo de revisión corresponde a la revisión acumulada de Tercer Semestre (Periodo extendido multianual o ajuste de ciclo). 
-"""
-    elif periodo == "Revisión Acumulada y Proyectada a Cierre de Vigencia":
-        bloque_config = """
-[BLOQUE DE CONFIGURACIÓN DE LA REVISIÓN]
-Nota para el GEM: El periodo de revisión pferece al precierre de la vigencia, analizando la ejecución real frente a proyecciones de cierre.
-"""
+with tab_res:
+    sin = m[m["estado_reporte"] != "Reportada"]
+    if len(sin):
+        st.subheader(f"⛔ Metas sin reporte ({len(sin)})")
+        st.caption("Están en el Plan Indicativo pero no vienen en el export de EVAPLAN (probable: la dependencia no reportó).")
+        st.dataframe(sin[["codigo_mp", "descripcion_mp", "comportamiento", "meta_vigencia"]].rename(columns=ETIQUETAS),
+                     hide_index=True, use_container_width=True)
+    st.subheader("Hallazgos por tipo")
+    if res.hallazgos.empty:
+        st.success("Sin hallazgos objetivos.")
     else:
-        bloque_config = """
-[BLOQUE DE CONFIGURACIÓN DE LA REVISIÓN]
-Nota para el GEM: El periodo de revisión corresponde al Cierre Final de la Vigencia. El juicio aquí es definitivo y estricto frente a metas anuales al 100%.
-"""
+        st.dataframe(res.hallazgos.groupby(["severidad", "regla"]).size().rename("metas").reset_index(),
+                     hide_index=True, use_container_width=True)
+    st.subheader("Plan de acción vs. meta")
+    st.dataframe(
+        _vista(m[m["tiene_plan_de_accion"]])[["codigo_mp", "pct_avance_vigencia", "pct_ejecucion_financiera",
+                                              "avance_actividades", "brecha_meta_vs_actividades"]]
+        .rename(columns=ETIQUETAS),
+        column_config={ETIQUETAS[c]: v for c, v in PCT.items()}, hide_index=True, use_container_width=True)
+    st.caption("La brecha es un número, no un veredicto: sin cronograma de ejecución no hay umbral único.")
 
-    return perfil_mision + bloque_config + contexto_usuario + reglas_oro + estructura_salida
+with tab_mat:
+    f1, f2, f3 = st.columns([2, 2, 3])
+    estados = f1.multiselect("Estado del reporte", sorted(m["estado_reporte"].unique()),
+                             default=sorted(m["estado_reporte"].unique()))
+    solo_alertas = f2.checkbox("Solo metas con alertas")
+    texto = f3.text_input("Buscar (código o descripción)")
+    v = m[m["estado_reporte"].isin(estados)]
+    if solo_alertas:
+        v = v[v["n_alertas"] > 0]
+    if texto:
+        v = v[v["codigo_mp"].str.contains(texto, case=False, na=False)
+              | v["descripcion_mp"].astype("string").str.contains(texto, case=False, na=False)]
+    cols = ["codigo_mp", "estado_reporte", "comportamiento", "meta_vigencia", "resultado", "pct_avance_vigencia",
+            "pct_avance_pg", "ppto_definitivo", "ppto_obligaciones", "pct_ejecucion_financiera",
+            "avance_actividades", "n_alertas"]
+    st.dataframe(_vista(v)[cols].rename(columns=ETIQUETAS),
+                 column_config={ETIQUETAS[c]: x for c, x in {**PCT, **DINERO}.items()},
+                 hide_index=True, use_container_width=True)
+    with st.expander("Ver todas las columnas"):
+        st.dataframe(_vista(v).rename(columns=ETIQUETAS), hide_index=True, use_container_width=True)
 
+    st.subheader("Ficha de la meta")
+    if len(v):
+        mp = st.selectbox("Meta", v["codigo_mp"], format_func=lambda c: f"{c} · {m.set_index('codigo_mp').loc[c, 'descripcion_mp']}"[:140])
+        f = m.set_index("codigo_mp").loc[mp]
+        a, b, c = st.columns(3)
+        a.metric("Meta vigencia", f"{f['meta_vigencia']:g}" if pd.notna(f["meta_vigencia"]) else "NP")
+        b.metric("Resultado", f"{f['resultado']:g}" if pd.notna(f["resultado"]) else "—")
+        c.metric("% vs meta", f"{f['pct_avance_vigencia'] * 100:.1f} %" if pd.notna(f["pct_avance_vigencia"]) else "—")
+        st.write(f"**Comportamiento:** {f['comportamiento']} · **Proyectos:** {f['proyectos'] if pd.notna(f['proyectos']) else 'sin plan de acción'}")
+        st.write(f"**Avance de actividades por proyecto:** {f['avance_por_proyecto'] if pd.notna(f['avance_por_proyecto']) else '—'}")
+        if f["alertas"]:
+            st.warning(f["alertas"])
+        for titulo, col in (("Principal logro", "principal_logro"), ("Análisis del logro", "analisis_logro"),
+                            ("Dificultades o gestiones", "dificultades_gestiones")):
+            st.markdown(f"**{titulo}:** {f[col] if pd.notna(f[col]) else '_(vacío)_'}")
 
-# ============================================================
-# FUNCIÓN LIMPIEZA PRESUPUESTAL
-# ============================================================
-def limpiar_moneda(serie):
-    return pd.to_numeric(
-        (
-            serie.astype(str)
-            .str.replace(r"\$", "", regex=True)
-            .str.replace(r"\s+", "", regex=True)
-            .str.replace(".", "", regex=False)
-            .str.replace(",", ".", regex=False)
-        ),
-        errors="coerce"
-    )
+with tab_hal:
+    sev = st.multiselect("Severidad", ["error", "advertencia", "info"], default=["error", "advertencia", "info"])
+    h = res.hallazgos[res.hallazgos["severidad"].isin(sev)]
+    st.dataframe(h.drop(columns=["fila_excel", "fuente"]), hide_index=True, use_container_width=True)
+    st.caption("Son incoherencias objetivas (no necesitan umbral). La gravedad y el dictamen los decide quien revisa.")
 
-# ============================================================
-# FUNCIÓN PDF CON NEGRILLA
-# ============================================================
-def escribir_bloque(c, texto, y, width, height, margen_x, margen_y, tamaño=10, negrilla=False):
-    textobject = c.beginText(margen_x, y)
-    fuente = "Helvetica-Bold" if negrilla else "Helvetica"
-    textobject.setFont(fuente, tamaño)
+with tab_cal:
+    st.write("Reglas de integridad y comparación entre fuentes (EVAPLAN vs. Plan Indicativo, presupuesto, avance).")
+    if res.calidad.empty:
+        st.success("Sin observaciones de calidad de datos.")
+    else:
+        st.dataframe(res.calidad, hide_index=True, use_container_width=True)
 
-    for linea in wrap(str(texto), 95):
-        if textobject.getY() <= margen_y:
-            c.drawText(textobject)
-            c.showPage()
-            textobject = c.beginText(margen_x, height - margen_y)
-            textobject.setFont(fuente, tamaño)
-        textobject.textLine(linea)
-
-    c.drawText(textobject)
-    return textobject.getY() - 12
-
-columnas_base_pi = [
-    'Código de Meta', 'Descripción de Meta', 'Comportamiento del Indicador',
-    'Valor Proyectado', 'Resultado', '2026',
-    'Principal Logro en Función del Cumplimiento', 'Análisis del Logro',
-    'Dificultades o Gestiones'
-]
-
-columnas_focalizacion = [
-    'Negro, Mulato, Afrodescendiente, Raizal y Palenquero', 'Indígena', 'Room',
-    'Campesinos', 'Niños Niñas y Adolescentes', 'Primera Infancia', 'Juventud',
-    'Personas Mayores', 'Mujer', 'LGTBIQ+', 'Personas con Discapacidad y sus Curadores',
-    'Personas Vulnerables', 'Habitantes de o en Calle', 'Víctimas de Violencia de Género',
-    'Víctimas del Conflicto', 'Reincorporados', 'Comunales', 'Interreligioso',
-    'Rescatistas de Animales', 'Migrantes', 'Retornados', 'Otros', '¿Cuál Otro?'
-]
-
-columnas_mp = [
-    "Cód. MP", "Descripción MP", "Cód. Proyecto", "Nombre Proyecto",
-    "Ppto. Total Obligaciones", "Ppto. Definitivo", "% Avance x Actividad"
-]
-
-def consolidar_proyectos(grupo):
-    proyectos = []
-    pares_unicos = set()
-    for _, fila in grupo.iterrows():
-        codigo = str(fila["Cód. Proyecto"]).strip()
-        nombre = str(fila["Nombre Proyecto"]).strip()
-        if codigo == "" or codigo.lower() == "nan" or nombre == "" or nombre.lower() == "nan":
-            continue
-        par = f"{codigo} - {nombre}"
-        if par not in pares_unicos:
-            pares_unicos.add(par)
-            proyectos.append(par)
-    return " | ".join(proyectos)
-
-# ============================================================
-# INTERFAZ DE USUARIO - CARGA DE ARCHIVOS CON PERSISTENCIA
-# ============================================================
-col1, col2 = st.columns(2)
-
-with col1:
-    st.subheader("1. Plan Indicativo")
-    # Al asignarle una key única, el componente recuerda el archivo de forma nativa en st.session_state
-    file_pi = st.file_uploader("Subir 'Informe de Plan Indicativo MP.xlsx'", type=["xlsx"], key="file_pi_uploader")
-
-with col2:
-    st.subheader("2. Plan de Acción / Centralizadas")
-    file_pa = st.file_uploader("Subir 'Centralizadas.xlsx'", type=["xlsx"], key="file_pa_uploader")
-
-if file_pi and file_pa:
-    st.success("¡Ambos archivos cargados con éxito! Presiona el botón para procesar.")
-    
-    if st.button("🚀 Procesar Datos e Integrar", type="primary"):
-        try:
-            with st.spinner("Procesando información presupuestal y cualitativa..."):
-                df_pi = pd.read_excel(file_pi, sheet_name="Sheet1", header=1)
-                df_pi.columns = df_pi.columns.astype(str).str.strip()
-
-                faltantes_pi = [col for col in columnas_base_pi if col not in df_pi.columns]
-                if faltantes_pi:
-                    st.error(f"Faltan columnas obligatorias en el Plan Indicativo: {faltantes_pi}")
-                    st.stop()
-
-                columnas_focalizacion_activas = []
-                for col in columnas_focalizacion:
-                    if col in df_pi.columns:
-                        tiene_datos = False
-                        for valor in df_pi[col]:
-                            if pd.isna(valor):
-                                continue
-                            try:
-                                if float(valor) != 0:
-                                    tiene_datos = True
-                                    break
-                            except:
-                                valor_texto = str(valor).strip()
-                                if valor_texto != "" and valor_texto.lower() != "nan" and valor_texto != "0":
-                                    tiene_datos = True
-                                    break
-                        if tiene_datos:
-                            columnas_focalizacion_activas.append(col)
-
-                columnas_pi_finales = columnas_base_pi + columnas_focalizacion_activas
-                df_pi = df_pi[columnas_pi_finales].copy()
-
-                for col in ['Resultado', '2026']:
-                    df_pi[col] = pd.to_numeric(df_pi[col], errors='coerce')
-                df_pi['Relacion_Resultado_MP_vs_2026'] = df_pi['Resultado'] / df_pi['2026']
-
-                df_pa = pd.read_excel(file_pa, sheet_name="Sheet1", header=1)
-                df_pa.columns = df_pa.columns.astype(str).str.strip()
-
-                faltantes_mp = [col for col in columnas_mp if col not in df_pa.columns]
-                if faltantes_mp:
-                    st.error(f"Faltan columnas obligatorias en Centralizadas: {faltantes_mp}")
-                    st.stop()
-
-                df_mp = df_pa[columnas_mp].copy()
-
-                for col in ["Ppto. Total Obligaciones", "Ppto. Definitivo"]:
-                    df_mp[col] = limpiar_moneda(df_mp[col])
-
-                df_mp["% Avance x Actividad"] = pd.to_numeric(df_mp["% Avance x Actividad"], errors="coerce")
-                df_mp["Avance_Actividad_01"] = df_mp["% Avance x Actividad"] / 100
-
-                df_agrupado = (
-                    df_mp.groupby(["Cód. MP", "Descripción MP"], as_index=False)
-                    .apply(lambda grupo: pd.Series({
-                        "Proyectos_Asociados": consolidar_proyectos(grupo),
-                        "Suma_Ppto_Total_Obligaciones": grupo["Ppto. Total Obligaciones"].sum(),
-                        "Suma_Ppto_Definitivo": grupo["Ppto. Definitivo"].sum(),
-                        "Promedio_Avance_Actividades_01": grupo["Avance_Actividad_01"].mean()
-                    }))
-                    .reset_index(drop=True)
-                )
-
-                df_agrupado["Relacion_Obligaciones_vs_Definitivo"] = (
-                    df_agrupado["Suma_Ppto_Total_Obligaciones"] / df_agrupado["Suma_Ppto_Definitivo"]
-                )
-
-                df_integrado = df_pi.merge(df_agrupado, left_on="Código de Meta", right_on="Cód. MP", how="left")
-                if "Cód. MP" in df_integrado.columns:
-                    df_integrado = df_integrado.drop(columns=["Cód. MP"])
-
-                output_excel = io.BytesIO()
-                with pd.ExcelWriter(output_excel, engine="openpyxl") as writer:
-                    df_integrado.to_excel(writer, index=False, sheet_name="MP_PI_PA")
-                
-                # Almacenamos el resultado del procesamiento en el session_state
-                st.session_state["excel_data"] = output_excel.getvalue()
-
-                output_pdf = io.BytesIO()
-                c = canvas.Canvas(output_pdf, pagesize=LETTER)
-                width, height = LETTER
-                margen_x, margen_y = 50, 50
-
-                def obtener_focalizacion(row):
-                    focalizaciones = []
-                    for col in columnas_focalizacion_activas:
-                        valor = row.get(col, None)
-                        if pd.isna(valor):
-                            continue
-                        try:
-                            if float(valor) != 0:
-                                focalizaciones.append(f"{col}: {valor}")
-                        except:
-                            valor_texto = str(valor).strip()
-                            if valor_texto != "" and valor_texto.lower() != "nan" and valor_texto != "0":
-                                focalizaciones.append(f"{col}: {valor_texto}")
-                    return " | ".join(focalizaciones) if focalizaciones else "No reporta focalización."
-
-                for _, row in df_integrado.iterrows():
-                    y = height - margen_y
-                    y = escribir_bloque(c, "META PRODUCTO", y, width, height, margen_x, margen_y, 11, True)
-                    y = escribir_bloque(c, f"Código de Meta: {row.get('Código de Meta','')}", y, width, height, margen_x, margen_y)
-                    y = escribir_bloque(c, f"Descripción de Meta: {row.get('Descripción de Meta','')}", y, width, height, margen_x, margen_y)
-                    y = escribir_bloque(c, f"Descripción MP: {row.get('Descripción MP','')}", y, width, height, margen_x, margen_y)
-                    y = escribir_bloque(c, f"Comportamiento del Indicador: {row.get('Comportamiento del Indicador','')}", y, width, height, margen_x, margen_y)
-                    y -= 8
-
-                    y = escribir_bloque(c, "PLAN INDICATIVO (PI)", y, width, height, margen_x, margen_y, 11, True)
-                    y = escribir_bloque(c, f"Valor Proyectado: {row.get('Valor Proyectado','')}", y, width, height, margen_x, margen_y)
-                    y = escribir_bloque(c, f"Resultado: {row.get('Resultado','')}", y, width, height, margen_x, margen_y)
-                    y = escribir_bloque(c, f"Programación 2026: {row.get('2026','')}", y, width, height, margen_x, margen_y)
-                    y = escribir_bloque(c, f"Relación Resultado / 2026: {row.get('Relacion_Resultado_MP_vs_2026','')}", y, width, height, margen_x, margen_y)
-                    y -= 8
-
-                    y = escribir_bloque(c, "PROYECTOS ASOCIADOS", y, width, height, margen_x, margen_y, 11, True)
-                    y = escribir_bloque(c, f"Proyectos Asociados: {row.get('Proyectos_Asociados','')}", y, width, height, margen_x, margen_y)
-                    y -= 8
-
-                    y = escribir_bloque(c, "FOCALIZACIÓN", y, width, height, margen_x, margen_y, 11, True)
-                    y = escribir_bloque(c, obtener_focalizacion(row), y, width, height, margen_x, margen_y)
-                    y -= 8
-
-                    y = escribir_bloque(c, "PLAN DE ACCIÓN (PA)", y, width, height, margen_x, margen_y, 11, True)
-                    y = escribir_bloque(c, f"Suma Presupuesto Definitivo: {row.get('Suma_Ppto_Definitivo','')}", y, width, height, margen_x, margen_y)
-                    y = escribir_bloque(c, f"Suma Total Obligaciones: {row.get('Suma_Ppto_Total_Obligaciones','')}", y, width, height, margen_x, margen_y)
-                    y = escribir_bloque(c, f"Promedio Avance Actividades: {row.get('Promedio_Avance_Actividades_01','')}", y, width, height, margen_x, margen_y)
-                    y = escribir_bloque(c, f"Relación Obligaciones / Definitivo: {row.get('Relacion_Obligaciones_vs_Definitivo','')}", y, width, height, margen_x, margen_y)
-                    y -= 8
-
-                    y = escribir_bloque(c, "ANÁLISIS CUALITATIVO", y, width, height, margen_x, margen_y, 11, True)
-                    y = escribir_bloque(c, f"Principal Logro en Función del Cumplimiento: {row.get('Principal Logro en Función del Cumplimiento','')}", y, width, height, margen_x, margen_y)
-                    y = escribir_bloque(c, f"Análisis del Logro: {row.get('Análisis del Logro','')}", y, width, height, margen_x, margen_y)
-                    y = escribir_bloque(c, f"Dificultades o Gestiones: {row.get('Dificultades o Gestiones','')}", y, width, height, margen_x, margen_y)
-                    c.showPage()
-
-                c.save()
-                st.session_state["pdf_data"] = output_pdf.getvalue()
-                st.session_state["prompt_final"] = generar_prompt_sistema(periodo_seleccionado)
-                st.session_state["procesado_exitoso"] = True
-                
-                st.balloons()
-
-        except Exception as e:
-            st.error(f"Ocurrió un error al procesar los archivos: {e}")
-            st.session_state["procesado_exitoso"] = False
-
-# ============================================================
-# RENDERIZADO PERSISTENTE DE RESULTADOS
-# ============================================================
-# Esto garantiza que los botones y prompts sigan visibles aunque el usuario cambie de página o interactúe
-if st.session_state["procesado_exitoso"]:
-    st.success("🎉 ¡Proceso finalizado con éxito!")
-
-    d_col1, d_col2 = st.columns(2)
-    with d_col1:
-        st.download_button(
-            label="📥 Descargar Matriz Integrada (Excel)",
-            data=st.session_state["excel_data"],
-            file_name="MP_PI_PA_Integrado.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True
-        )
-    with d_col2:
-        st.download_button(
-            label="📥 Descargar Reporte Completo (PDF)",
-            data=st.session_state["pdf_data"],
-            file_name="MP_PI_PA_Gemini_Completo.pdf",
-            mime="application/pdf",
-            use_container_width=True
-        )
-
+with tab_out:
+    d1, d2 = st.columns(2)
+    d1.download_button("📥 Matriz integrada (Excel)", reportes.a_excel(m, res.hallazgos, res.calidad),
+                       file_name="MP_PI_PA_Integrado.xlsx", use_container_width=True,
+                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+    d2.download_button("📥 Reporte por meta (PDF) para el LLM", reportes.a_pdf(m),
+                       file_name="MP_PI_PA_Reporte.pdf", mime="application/pdf", use_container_width=True)
     st.markdown("---")
-    st.subheader("🤖 Asistente de Auditoría EVAPLAN (Prompt Listo)")
-    
-    # Recalcula el prompt dinámicamente si el usuario cambia el periodo en la barra lateral
-    prompt_dinamico = generar_prompt_sistema(periodo_seleccionado)
-    
-    with st.expander("📋 Ver y Copiar Propuesta de Prompt para Gemini / ChatGPT", expanded=True):
-        st.markdown(
-            "💡 **Paso 1:** Pasa el mouse sobre el bloque de texto gris de abajo "
-            "y haz clic en el botón de **Copiar** (icono de dos hojas) en la esquina superior derecha."
-        )
-        # Bloque de copiado rápido
-        st.code(prompt_dinamico, language="markdown", wrap_lines=True)
-        
-        st.markdown("---")
-        st.markdown("🚀 **Paso 2:** Ve directo a la Inteligencia Artificial a pegar tu prompt:")
-        
-        # Columnas para botones de acceso rápido
-        col_gem, col_gpt = st.columns(2)
-        with col_gem:
-            st.link_button("🌐 Ir a Google Gemini Web", "https://gemini.google.com/", use_container_width=True, type="primary")
-        with col_gpt:
-            st.link_button("💬 Ir a ChatGPT (Alternativo)", "https://chatgpt.com/", use_container_width=True)
-
-else:
-    if not (file_pi and file_pa):
-        st.info("💡 Por favor, sube ambos archivos de Excel para habilitar la unificación de los planes.")
+    st.subheader("🤖 Asistente de Auditoría EVAPLAN (prompt listo)")
+    with st.expander("📋 Ver y copiar el prompt para Gemini / ChatGPT", expanded=True):
+        st.markdown("💡 **Paso 1:** copia el prompt con el icono de la esquina superior derecha del bloque.")
+        st.code(generar_prompt_sistema(periodo, res.vigencia, con_hechos), language="markdown", wrap_lines=True)
+        st.markdown("🚀 **Paso 2:** pégalo en la IA y luego adjunta el PDF y el Excel descargados.")
+        g1, g2 = st.columns(2)
+        g1.link_button("🌐 Ir a Google Gemini Web", "https://gemini.google.com/", use_container_width=True, type="primary")
+        g2.link_button("💬 Ir a ChatGPT (alternativo)", "https://chatgpt.com/", use_container_width=True)

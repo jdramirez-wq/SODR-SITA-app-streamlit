@@ -32,6 +32,8 @@ class Campo:
     nulo: bool = False          # ¿se permiten vacíos?
     pos: int | None = None      # posición de columna (0-based) cuando hay encabezados repetidos
     prefijo: bool = False       # el encabezado cambia (p. ej. lleva fecha de corte): comparar por prefijo
+    alternativas: tuple[str, ...] = ()   # otros encabezados válidos para el mismo campo
+    marca_logro: str = ""       # si el encabezado empieza así, el valor es LOGRO (genera <campo>_logro)
     notas: str = ""
 
 
@@ -79,8 +81,8 @@ VOCABULARIOS = {
 _ANIOS = (2024, 2025, 2026, 2027)
 
 _NOTA_VALORES = (
-    "Valor por vigencia. Vigencia cerrada: logro alcanzado; vigencia en curso: meta reprogramada "
-    "(coincide 100 % con el bloque 'LOGRO / REPROGRAMACIÓN PLAN DE ACCIÓN' de Drive). Por confirmar."
+    "Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' "
+    "en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado."
 )
 
 
@@ -94,6 +96,23 @@ def _valores_evaplan() -> tuple[Campo, ...]:
     return (pg, *anios)
 
 
+def _valores_drive(pos_2024: int, marcados: tuple[int, ...]) -> tuple[Campo, ...]:
+    """Cuatro columnas anuales consecutivas del bloque vigente de Drive.
+
+    El encabezado cambia con el tiempo: al cerrar una vigencia el técnico lo renombra de '2026' a 'VAL ALC 2026'.
+    Se aceptan ambas formas y se registra cuál llegó (<campo>_logro). `marcados` solo fija el nombre 'principal'.
+    """
+    campos = []
+    for i, anio in enumerate(_ANIOS):
+        marcado, simple = f"VAL ALC {anio}", str(anio)
+        origen, alt = (marcado, (simple,)) if anio in marcados else (simple, (marcado,))
+        campos.append(Campo(
+            f"valor_{anio}", origen, "valor_np",
+            f"Valor de la vigencia {anio}: logro si el encabezado dice 'VAL ALC', meta si no.",
+            pos=pos_2024 + i, alternativas=alt, marca_logro="VAL ALC", notas=_NOTA_VALORES))
+    return tuple(campos)
+
+
 _NARRATIVA = (
     Campo("principal_logro", "Principal Logro en Función del Cumplimiento", "texto",
           "Narrativa reportada por la entidad.", nulo=True),
@@ -101,6 +120,30 @@ _NARRATIVA = (
     Campo("dificultades_gestiones", "Dificultades o Gestiones", "texto",
           "Dificultades o gestiones reportadas.", nulo=True),
 )
+
+# Enfoque poblacional (EVAPLAN): cantidad de personas por grupo. Opcionales: la página solo muestra los que tienen datos.
+FOCALIZACION = (
+    ("foc_narp", "Negro, Mulato, Afrodescendiente, Raizal y Palenquero"), ("foc_indigena", "Indígena"),
+    ("foc_rrom", "Room"), ("foc_campesinos", "Campesinos"), ("foc_nna", "Niños Niñas y Adolescentes"),
+    ("foc_primera_infancia", "Primera Infancia"), ("foc_juventud", "Juventud"),
+    ("foc_personas_mayores", "Personas Mayores"), ("foc_mujer", "Mujer"), ("foc_lgtbiq", "LGTBIQ+"),
+    ("foc_discapacidad", "Personas con Discapacidad y sus Curadores"), ("foc_vulnerables", "Personas Vulnerables"),
+    ("foc_habitantes_calle", "Habitantes de o en Calle"), ("foc_vbg", "Víctimas de Violencia de Género"),
+    ("foc_victimas_conflicto", "Víctimas del Conflicto"), ("foc_reincorporados", "Reincorporados"),
+    ("foc_comunales", "Comunales"), ("foc_interreligioso", "Interreligioso"),
+    ("foc_rescatistas_animales", "Rescatistas de Animales"), ("foc_migrantes", "Migrantes"),
+    ("foc_retornados", "Retornados"), ("foc_otros", "Otros"),
+)
+
+
+def _focalizacion_evaplan() -> tuple[Campo, ...]:
+    campos = tuple(
+        Campo(c, o, "decimal", f"Personas focalizadas: {o}.", nulo=True,
+              notas="Opcional. 0 o vacío = sin focalización." + (" 'Room' (sic) es como viene en EVAPLAN." if o == "Room" else ""))
+        for c, o in FOCALIZACION
+    )
+    return (*campos, Campo("foc_otro_cual", "¿Cuál Otro?", "texto", "Descripción del grupo en 'Otros'.", nulo=True))
+
 
 # ---------------------------------------------------------------- EVAPLAN: Plan Indicativo MP
 PI_MP_EVAPLAN = Esquema(
@@ -129,17 +172,18 @@ PI_MP_EVAPLAN = Esquema(
         Campo("constante_k", "Constante (K)", "decimal", "Constante de la fórmula."),
         Campo("formula", "Fórmula", "texto", "Fórmula del indicador, p. ej. 'V1' o '((V1+V2)/720)*100'."),
         Campo("resultado", "Resultado", "decimal",
-              "Resultado reportado por la entidad en el periodo de corte (vigencia en curso).",
-              notas="Dato clave de seguimiento. Semántica exacta por confirmar (¿acumulado de la vigencia?)."),
+              "Último reporte ACUMULADO de la dependencia (✅ confirmado).",
+              notas="Dato clave de seguimiento. En los datos es el acumulado de la VIGENCIA en curso "
+                    "(menor que los logros previos sumados en metas acumuladas), no del cuatrienio."),
         Campo("valor_proyectado", "Valor Proyectado", "decimal",
               "Proyección reportada por la entidad.", nulo=True, notas="Por confirmar su significado."),
         *_valores_evaplan(),
         *_NARRATIVA,
+        *_focalizacion_evaplan(),
     ),
     notas=(
         "Fila 1 es un título ('EvaPlan'); los encabezados están en la fila 2.",
-        "No se leen (se ignoran) los bloques de enfoque poblacional (~22 columnas), 'Otros', '¿Cuál Otro?' "
-        "y enfoque territorial (una columna por municipio, ~42).",
+        "No se lee (aún) el enfoque territorial: una columna por municipio (~42).",
         "Los encabezados de año son numéricos (2024, 2025, 2026.0…): se normalizan.",
     ),
 )
@@ -167,7 +211,7 @@ PI_MR_EVAPLAN = Esquema(
         Campo("variables", "Variable", "texto", "Definición de variables."),
         Campo("constante_k", "Constante (K)", "decimal", "Constante de la fórmula."),
         Campo("formula", "Fórmula", "texto", "Fórmula del indicador."),
-        Campo("resultado", "Resultado", "decimal", "Resultado reportado en el periodo de corte."),
+        Campo("resultado", "Resultado", "decimal", "Último reporte ACUMULADO de la dependencia (✅ confirmado)."),
         Campo("valor_proyectado", "Valor Proyectado", "decimal", "Proyección reportada.", nulo=True),
         *_valores_evaplan(),
         *_NARRATIVA,
@@ -284,10 +328,7 @@ PI_DRIVE_MP = Esquema(
         Campo("pi_2026", "2026.", "valor_np", "Programación original 2026.", pos=33),
         Campo("pi_2027", "2027.", "valor_np", "Programación original 2027.", pos=34),
         Campo("valor_pg", "PG 2024-2027", "valor_np", "PG vigente (reprogramado).", pos=35),
-        Campo("valor_2024", "VAL ALC 2024", "valor_np", "Valor 2024 (logro).", pos=36, notas=_NOTA_VALORES),
-        Campo("valor_2025", "VAL ALC 2025", "valor_np", "Valor 2025 (logro).", pos=37, notas=_NOTA_VALORES),
-        Campo("valor_2026", "2026", "valor_np", "Valor 2026 (reprogramado).", pos=38, notas=_NOTA_VALORES),
-        Campo("valor_2027", "2027", "valor_np", "Valor 2027 (reprogramado).", pos=39, notas=_NOTA_VALORES),
+        *_valores_drive(36, marcados=(2024, 2025)),
         Campo("verificacion_comportamiento", "VERIFICACIÓN DEL COMPORTAMIENTO DE META EN REPROGRAMACIÓN", "texto",
               "Comportamiento verificado por fórmula del libro (ACUMULADO, FLUJO…).", nulo=True, pos=40,
               notas="Puede contener 'ERROR' (fórmula fallida)."),
@@ -340,10 +381,7 @@ PI_DRIVE_MR = Esquema(
         Campo("pi_2026", "2026", "valor_np", "Programación original 2026.", pos=24),
         Campo("pi_2027", "2027", "valor_np", "Programación original 2027.", pos=25),
         Campo("valor_pg", "PG", "valor_np", "PG vigente (reprogramado).", pos=26),
-        Campo("valor_2024", "VAL ALC 2024", "valor_np", "Valor 2024 (logro).", pos=27),
-        Campo("valor_2025", "2025", "valor_np", "Valor 2025.", pos=28),
-        Campo("valor_2026", "2026", "valor_np", "Valor 2026.", pos=29),
-        Campo("valor_2027", "2027", "valor_np", "Valor 2027.", pos=30),
+        *_valores_drive(27, marcados=(2024,)),
         Campo("verificacion_comportamiento", "VERIFICACIÓN DEL COMPORTAMIENTO DE META EN REPROGRAMACIÓN", "texto",
               "Comportamiento verificado.", nulo=True, pos=31, notas="27 de 75 filas en 'ERROR'."),
     ),

@@ -27,6 +27,8 @@ def test_ejemplos_producen_exactamente_las_anomalias_sembradas(fuentes):
         ("advertencia", "mp_falta_en_evaplan", "MP9900202039902003"),
         ("advertencia", "pg_vs_anios[pi]", "MP9900202039902003"),
         ("info", "meta_sin_actividades", "MP9900202019902001"),
+        # la hoja MR de ejemplo deja '2025' sin marcar aunque ya cerró (inconsistencia real observada)
+        ("advertencia", "vigencia_cerrada_sin_marca_logro", "2025"),
     }
     assert set(zip(h["severidad"], h["regla"], h["llave"])) == esperado
     assert (h["severidad"] != "error").all()
@@ -89,3 +91,17 @@ def test_regla_pg_segun_comportamiento(comportamiento, pg, anios, hay_hallazgo):
     fila = {"codigo_mp": "MP0", "fila_excel": 3, "comportamiento": comportamiento, "valor_pg": pg}
     fila.update({f"valor_{a}": v for a, v in zip(V.ANIOS, anios)})
     assert (len(V.pg_vs_anios(pd.DataFrame([fila]), "t")) == 1) is hay_hallazgo
+
+
+def test_vigencia_se_infiere_de_los_encabezados_de_drive(fuentes):
+    assert V.inferir_vigencia(fuentes["drive_mp"]) == 2026       # 2024 y 2025 marcados 'VAL ALC'
+    assert fuentes["drive_mp"]["valor_2024_logro"].all() and not fuentes["drive_mp"]["valor_2026_logro"].any()
+
+
+def test_marca_logro_detecta_inconsistencias(fuentes):
+    mp = fuentes["drive_mp"]
+    assert V.marca_logro_vs_vigencia(mp, "x", 2026).empty
+    h = V.marca_logro_vs_vigencia(mp, "x", 2027)                  # si la vigencia fuera 2027, 2026 debería estar marcado
+    assert h["regla"].tolist() == ["vigencia_cerrada_sin_marca_logro"] and h["llave"].tolist() == ["2026"]
+    h = V.marca_logro_vs_vigencia(mp, "x", 2025)                  # 2025 marcado pero aún no cerrada
+    assert h["regla"].tolist() == ["vigencia_abierta_con_marca_logro"]

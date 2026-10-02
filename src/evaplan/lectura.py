@@ -31,7 +31,10 @@ def _clave(texto: str) -> str:
 
 
 def _coincide(campo: Campo, encabezado: str) -> bool:
-    esperado, real = _clave(campo.origen), _clave(encabezado)
+    real = _clave(encabezado)
+    if any(real == _clave(a) for a in campo.alternativas):
+        return True
+    esperado = _clave(campo.origen)
     return real.startswith(esperado) if campo.prefijo else real == esperado
 
 
@@ -43,9 +46,8 @@ def _resolver_columnas(esquema: Esquema, encabezados: list[str]) -> dict[str, in
             if c.pos >= len(encabezados):
                 problemas.append(f"'{c.origen}': se esperaba en la columna {c.pos + 1}, pero el archivo es más corto")
             elif not _coincide(c, encabezados[c.pos]):
-                problemas.append(
-                    f"columna {c.pos + 1}: se esperaba '{c.origen}' y llegó '{encabezados[c.pos]}'"
-                )
+                validos = " o ".join(f"'{h}'" for h in (c.origen, *c.alternativas))
+                problemas.append(f"columna {c.pos + 1}: se esperaba {validos} y llegó '{encabezados[c.pos]}'")
             else:
                 indices[c.canonico] = c.pos
         else:
@@ -58,9 +60,11 @@ def _resolver_columnas(esquema: Esquema, encabezados: list[str]) -> dict[str, in
             else:
                 indices[c.canonico] = candidatos[0]
     if problemas:
-        raise EsquemaError(
-            f"El archivo no coincide con '{esquema.titulo}':\n  - " + "\n  - ".join(problemas)
-        )
+        extra = ""
+        if len(problemas) > 5:     # casi seguro es otro archivo, no un cambio puntual de columnas
+            extra = f"\n  - … y {len(problemas) - 5} más. ¿Es el archivo correcto para '{esquema.titulo}'?"
+            problemas = problemas[:5]
+        raise EsquemaError(f"El archivo no coincide con '{esquema.titulo}':\n  - " + "\n  - ".join(problemas) + extra)
     return indices
 
 
@@ -101,6 +105,8 @@ def _serie(campo: Campo, valores: pd.Series) -> dict[str, pd.Series]:
 def leer(origen, esquema: Esquema) -> pd.DataFrame:
     """Lee `origen` según `esquema` y devuelve un DataFrame tipado."""
     columnas = (max(c.pos for c in esquema.campos if c.pos is not None) + 1) if esquema.usa_posiciones else None
+    if hasattr(origen, "seek"):       # archivo subido en Streamlit: puede haberse leído antes
+        origen.seek(0)
     try:
         crudo = pd.read_excel(
             origen, sheet_name=esquema.hoja, header=None, dtype=object,
@@ -121,6 +127,10 @@ def leer(origen, esquema: Esquema) -> pd.DataFrame:
             salida.update(_serie(campo, datos.iloc[:, indices[campo.canonico]]))
         else:  # columna opcional ausente
             salida.update(_serie(campo, pd.Series([None] * len(datos), index=datos.index, dtype=object)))
+    for campo in esquema.campos:   # ¿el encabezado de este año marca LOGRO ('VAL ALC …')?
+        if campo.marca_logro and campo.canonico in indices:
+            marcado = _clave(encabezados[indices[campo.canonico]]).startswith(_clave(campo.marca_logro))
+            salida[f"{campo.canonico}_logro"] = pd.Series(marcado, index=datos.index, dtype="boolean")
     df = pd.DataFrame(salida)
     df.insert(0, "fila_excel", datos.index + 1)
 

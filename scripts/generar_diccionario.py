@@ -53,7 +53,7 @@ def generar() -> str:
         for i, c in enumerate(e.campos, start=1):
             pos = c.pos + 1 if c.pos is not None else "—"
             tipo = c.tipo if c.tipo not in ("valor_np", "codigo_nombre") else f"{c.tipo} (2 columnas)"
-            origen = c.origen + ("…" if c.prefijo else "")
+            origen = " / ".join([c.origen + ("…" if c.prefijo else ""), *c.alternativas])
             L.append(f"| {pos if usa_pos else i} | `{_celda(origen)}` | `{c.canonico}` | {tipo} | "
                      f"{'sí' if c.nulo else 'no'} | {_celda(c.descripcion)} | {_celda(c.notas)} |")
         L.append("")

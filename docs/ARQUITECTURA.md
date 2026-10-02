@@ -8,7 +8,11 @@ Usuario ──> Streamlit Cloud (app.py + pages/)           ← interfaz (delgad
               esquemas.py      diccionario de datos (única fuente de verdad)
               limpieza.py      celdas sucias → valores tipados
               lectura.py       Excel → DataFrames tipados (EsquemaError si cambia la estructura)
-              validaciones.py  integridad y cruces → tabla de hallazgos
+              validaciones.py  integridad y cruces entre fuentes → tabla de hallazgos
+              seguimiento.py   matriz por meta (hechos objetivos) + hallazgos de seguimiento
+              reportes.py      Excel integrado y PDF por meta
+              prompts.py       prompt del auditor (texto original, vigencia parametrizada)
+              pipeline.py      orquestador: archivos → Resultado (lo que usa la página)
                  ▲
    Fuentes: descargas de EVAPLAN (file_uploader) + libro del Plan Indicativo en Drive (URL en st.secrets)
 
@@ -27,5 +31,5 @@ tests/                           pytest sobre los ejemplos ficticios
 
 ## Estado de la migración
 - ✅ `src/evaplan/`: contrato de datos y validaciones de EVAPLAN + Plan Indicativo.
-- ⏳ `pages/1_Auditoria_EVAPLAN.py` y `pages/2_POAI_2027.py` aún tienen su lógica propia; se migrarán de a una
-  página, reproduciendo primero sus resultados actuales (ver HOJA_DE_RUTA).
+- ✅ `pages/1_Auditoria_EVAPLAN.py` (Seguimiento EVAPLAN) ya es una interfaz delgada sobre `pipeline.ejecutar`.
+- ⏳ `pages/2_POAI_2027.py` conserva su lógica propia; se migrará después (ver HOJA_DE_RUTA).

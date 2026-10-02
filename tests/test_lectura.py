@@ -107,3 +107,21 @@ def test_error_si_falta_la_hoja(tmp_path):
     wb.save(ruta)
     with pytest.raises(L.EsquemaError, match="hoja 'MR'"):
         L.leer_pi_drive_mr(ruta)
+
+
+def test_drive_acepta_que_el_tecnico_renombre_el_ano_cerrado(tmp_path):
+    """Al cerrar 2026 el técnico cambia el encabezado '2026' por 'VAL ALC 2026': el lector no debe romperse."""
+    wb = load_workbook(EJ / "ejemplo_PI_Drive.xlsx")
+    wb["MP"]["AM2"] = "VAL ALC 2026"                              # columna AM = posición 39 (valor_2026)
+    ruta = tmp_path / "cerrado_2026.xlsx"
+    wb.save(ruta)
+    df = L.leer_pi_drive_mp(ruta)
+    assert df["valor_2026_logro"].all() and not df["valor_2027_logro"].any()
+    from src.evaplan import validaciones as V
+    assert V.inferir_vigencia(df) == 2027
+
+
+def test_drive_marca_de_logro_por_ano(drive_mp, drive_mr):
+    assert drive_mp[["valor_2024_logro", "valor_2025_logro", "valor_2026_logro", "valor_2027_logro"]].iloc[0].tolist() \
+        == [True, True, False, False]
+    assert drive_mr["valor_2025_logro"].iloc[0] is not None and not drive_mr["valor_2025_logro"].any()

@@ -86,7 +86,7 @@ def cobertura_evaplan_vs_drive(pi_evaplan: pd.DataFrame, pi_drive: pd.DataFrame)
     drive = pi_drive[pi_drive["entidad_codigo"].isin(entidades)]
     ev, dr = set(pi_evaplan["codigo_mp"]), set(drive["codigo_mp"])
     h = [_h("mp_falta_en_evaplan", "advertencia", "pi_mp_evaplan", mp,
-            "La meta existe en el Plan Indicativo de Drive pero NO viene en el export de EVAPLAN",
+            "Meta del Plan Indicativo SIN REPORTE en el export de EVAPLAN (probable: la dependencia no reportó)",
             int(drive.loc[drive["codigo_mp"] == mp, "fila_excel"].iloc[0]))
          for mp in sorted(dr - ev)]
     h += [_h("mp_falta_en_drive", "error", "pi_mp_evaplan", mp,
@@ -243,12 +243,48 @@ def presupuesto_vs_recursos_pi(ce: pd.DataFrame, drive_mp: pd.DataFrame, anio: i
     return _como_df(h)
 
 
+# ------------------------------------------------------------------ marca de logro en encabezados de Drive
+def inferir_vigencia(drive: pd.DataFrame) -> int | None:
+    """Vigencia en curso = primer año cuyo encabezado en Drive NO está marcado como logro ('VAL ALC').
+
+    El técnico renombra la columna al cerrar la vigencia, así que el encabezado indica hasta dónde hay logro.
+    """
+    for a in ANIOS:
+        col = f"valor_{a}_logro"
+        if col in drive.columns and len(drive) and not bool(drive[col].iloc[0]):
+            return a
+    return None
+
+
+def marca_logro_vs_vigencia(drive: pd.DataFrame, fuente: str, vigencia: int) -> pd.DataFrame:
+    """Vigencias cerradas deben llevar 'VAL ALC' en el encabezado; las pendientes no."""
+    h = []
+    for a in ANIOS:
+        col = f"valor_{a}_logro"
+        if col not in drive.columns or drive.empty:
+            continue
+        marcado = bool(drive[col].iloc[0])
+        if a < vigencia and not marcado:
+            h.append(_h("vigencia_cerrada_sin_marca_logro", "advertencia", fuente, str(a),
+                        f"La vigencia {a} ya cerró pero su encabezado no dice 'VAL ALC {a}': "
+                        "¿se cargó el logro o aún está la meta?", 2))
+        elif a >= vigencia and marcado:
+            h.append(_h("vigencia_abierta_con_marca_logro", "advertencia", fuente, str(a),
+                        f"El encabezado de {a} dice 'VAL ALC' pero la vigencia {vigencia} no ha cerrado", 2))
+    return _como_df(h)
+
+
 # ------------------------------------------------------------------ orquestador
 def validar_todo(pi_mp_evaplan: pd.DataFrame | None = None, pi_mr_evaplan: pd.DataFrame | None = None,
                  centralizadas: pd.DataFrame | None = None, drive_mp: pd.DataFrame | None = None,
-                 drive_mr: pd.DataFrame | None = None) -> pd.DataFrame:
-    """Ejecuta todas las reglas aplicables según las fuentes disponibles. Devuelve un DataFrame de hallazgos."""
+                 drive_mr: pd.DataFrame | None = None, vigencia: int | None = None) -> pd.DataFrame:
+    """Ejecuta todas las reglas aplicables según las fuentes disponibles. Devuelve un DataFrame de hallazgos.
+
+    `vigencia`: año en curso. Si no se da, se infiere de los encabezados 'VAL ALC' de Drive.
+    """
     r: list[pd.DataFrame] = []
+    if vigencia is None and drive_mp is not None:
+        vigencia = inferir_vigencia(drive_mp)
     if pi_mp_evaplan is not None:
         r += [llave_unica(pi_mp_evaplan, "codigo_mp", "pi_mp_evaplan"),
               codigo_mp_coherente(pi_mp_evaplan, "pi_mp_evaplan")]
@@ -256,6 +292,8 @@ def validar_todo(pi_mp_evaplan: pd.DataFrame | None = None, pi_mr_evaplan: pd.Da
             r.append(mr_existe(pi_mp_evaplan, mr, "pi_mp_evaplan"))
     if pi_mr_evaplan is not None:
         r.append(llave_unica(pi_mr_evaplan, "codigo_mr", "pi_mr_evaplan"))
+    if drive_mr is not None and vigencia:
+        r.append(marca_logro_vs_vigencia(drive_mr, "pi_drive_mr", vigencia))
     if centralizadas is not None:
         r += [llave_unica(centralizadas, "codigo_actividad", "centralizadas"),
               codigo_mp_coherente(centralizadas, "centralizadas"), presupuesto_invariantes(centralizadas),
@@ -264,6 +302,8 @@ def validar_todo(pi_mp_evaplan: pd.DataFrame | None = None, pi_mr_evaplan: pd.Da
     if drive_mp is not None:
         r += [llave_unica(drive_mp, "codigo_mp", "pi_drive_mp"), codigo_mp_coherente(drive_mp, "pi_drive_mp"),
               pg_vs_anios(drive_mp, "pi_drive_mp", prefijo="pi")]
+        if vigencia:
+            r.append(marca_logro_vs_vigencia(drive_mp, "pi_drive_mp", vigencia))
         if pi_mp_evaplan is not None:
             r += [cobertura_evaplan_vs_drive(pi_mp_evaplan, drive_mp),
                   valores_evaplan_vs_drive(pi_mp_evaplan, drive_mp)]

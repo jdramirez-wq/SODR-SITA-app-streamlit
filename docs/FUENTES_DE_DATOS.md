@@ -24,8 +24,12 @@ from src.evaplan import lectura as L, validaciones as V
 
 pi   = L.leer_pi_mp_evaplan(archivo_subido)         # ruta, URL o st.file_uploader
 ce   = L.leer_centralizadas(otro_archivo)
-dmp  = L.leer_pi_drive_mp(url_de_exportacion_xlsx)  # URL en st.secrets, no en el código
+dmp  = L.leer_pi_drive_mp(archivo_o_bytes)          # el enlace de Drive va en el secreto URL_DRIVE_PLAN_INDICATIVO
 hallazgos = V.validar_todo(pi_mp_evaplan=pi, centralizadas=ce, drive_mp=dmp)
+
+# o, todo junto (lo que usa la página):
+from src.evaplan import pipeline
+res = pipeline.ejecutar(archivo_pi, archivo_centralizadas, drive=bytes_del_libro)   # res.matriz, res.hallazgos, res.calidad
 ```
 Si la estructura de un archivo cambia, el lector lanza `EsquemaError` indicando qué columna falló.
 

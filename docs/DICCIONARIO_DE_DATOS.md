@@ -28,7 +28,7 @@ Metas de producto (MP) de UNA entidad con su programación vigente y el resultad
 - **Lector:** `leer_pi_mp_evaplan()`
 
 > Fila 1 es un título ('EvaPlan'); los encabezados están en la fila 2.
-> No se leen (se ignoran) los bloques de enfoque poblacional (~22 columnas), 'Otros', '¿Cuál Otro?' y enfoque territorial (una columna por municipio, ~42).
+> No se lee (aún) el enfoque territorial: una columna por municipio (~42).
 > Los encabezados de año son numéricos (2024, 2025, 2026.0…): se normalizan.
 
 | # | Encabezado original | Campo canónico | Tipo | ¿Vacío? | Descripción | Notas |
@@ -47,16 +47,39 @@ Metas de producto (MP) de UNA entidad con su programación vigente y el resultad
 | 12 | `Variable` | `variables` | texto | no | Definición de las variables V1..Vn del indicador. |  |
 | 13 | `Constante (K)` | `constante_k` | decimal | no | Constante de la fórmula. |  |
 | 14 | `Fórmula` | `formula` | texto | no | Fórmula del indicador, p. ej. 'V1' o '((V1+V2)/720)*100'. |  |
-| 15 | `Resultado` | `resultado` | decimal | no | Resultado reportado por la entidad en el periodo de corte (vigencia en curso). | Dato clave de seguimiento. Semántica exacta por confirmar (¿acumulado de la vigencia?). |
+| 15 | `Resultado` | `resultado` | decimal | no | Último reporte ACUMULADO de la dependencia (✅ confirmado). | Dato clave de seguimiento. En los datos es el acumulado de la VIGENCIA en curso (menor que los logros previos sumados en metas acumuladas), no del cuatrienio. |
 | 16 | `Valor Proyectado` | `valor_proyectado` | decimal | sí | Proyección reportada por la entidad. | Por confirmar su significado. |
 | 17 | `PG` | `valor_pg` | valor_np (2 columnas) | no | Meta del cuatrienio (Programación de Gobierno) vigente. | Reprogramada; puede diferir de 'pi_pg' (PI original). |
-| 18 | `2024` | `valor_2024` | valor_np (2 columnas) | no | Valor de la vigencia 2024. | Valor por vigencia. Vigencia cerrada: logro alcanzado; vigencia en curso: meta reprogramada (coincide 100 % con el bloque 'LOGRO / REPROGRAMACIÓN PLAN DE ACCIÓN' de Drive). Por confirmar. |
-| 19 | `2025` | `valor_2025` | valor_np (2 columnas) | no | Valor de la vigencia 2025. | Valor por vigencia. Vigencia cerrada: logro alcanzado; vigencia en curso: meta reprogramada (coincide 100 % con el bloque 'LOGRO / REPROGRAMACIÓN PLAN DE ACCIÓN' de Drive). Por confirmar. |
-| 20 | `2026` | `valor_2026` | valor_np (2 columnas) | no | Valor de la vigencia 2026. | Valor por vigencia. Vigencia cerrada: logro alcanzado; vigencia en curso: meta reprogramada (coincide 100 % con el bloque 'LOGRO / REPROGRAMACIÓN PLAN DE ACCIÓN' de Drive). Por confirmar. |
-| 21 | `2027` | `valor_2027` | valor_np (2 columnas) | no | Valor de la vigencia 2027. | Valor por vigencia. Vigencia cerrada: logro alcanzado; vigencia en curso: meta reprogramada (coincide 100 % con el bloque 'LOGRO / REPROGRAMACIÓN PLAN DE ACCIÓN' de Drive). Por confirmar. |
+| 18 | `2024` | `valor_2024` | valor_np (2 columnas) | no | Valor de la vigencia 2024. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
+| 19 | `2025` | `valor_2025` | valor_np (2 columnas) | no | Valor de la vigencia 2025. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
+| 20 | `2026` | `valor_2026` | valor_np (2 columnas) | no | Valor de la vigencia 2026. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
+| 21 | `2027` | `valor_2027` | valor_np (2 columnas) | no | Valor de la vigencia 2027. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
 | 22 | `Principal Logro en Función del Cumplimiento` | `principal_logro` | texto | sí | Narrativa reportada por la entidad. |  |
 | 23 | `Análisis del Logro` | `analisis_logro` | texto | sí | Análisis del logro reportado. |  |
 | 24 | `Dificultades o Gestiones` | `dificultades_gestiones` | texto | sí | Dificultades o gestiones reportadas. |  |
+| 25 | `Negro, Mulato, Afrodescendiente, Raizal y Palenquero` | `foc_narp` | decimal | sí | Personas focalizadas: Negro, Mulato, Afrodescendiente, Raizal y Palenquero. | Opcional. 0 o vacío = sin focalización. |
+| 26 | `Indígena` | `foc_indigena` | decimal | sí | Personas focalizadas: Indígena. | Opcional. 0 o vacío = sin focalización. |
+| 27 | `Room` | `foc_rrom` | decimal | sí | Personas focalizadas: Room. | Opcional. 0 o vacío = sin focalización. 'Room' (sic) es como viene en EVAPLAN. |
+| 28 | `Campesinos` | `foc_campesinos` | decimal | sí | Personas focalizadas: Campesinos. | Opcional. 0 o vacío = sin focalización. |
+| 29 | `Niños Niñas y Adolescentes` | `foc_nna` | decimal | sí | Personas focalizadas: Niños Niñas y Adolescentes. | Opcional. 0 o vacío = sin focalización. |
+| 30 | `Primera Infancia` | `foc_primera_infancia` | decimal | sí | Personas focalizadas: Primera Infancia. | Opcional. 0 o vacío = sin focalización. |
+| 31 | `Juventud` | `foc_juventud` | decimal | sí | Personas focalizadas: Juventud. | Opcional. 0 o vacío = sin focalización. |
+| 32 | `Personas Mayores` | `foc_personas_mayores` | decimal | sí | Personas focalizadas: Personas Mayores. | Opcional. 0 o vacío = sin focalización. |
+| 33 | `Mujer` | `foc_mujer` | decimal | sí | Personas focalizadas: Mujer. | Opcional. 0 o vacío = sin focalización. |
+| 34 | `LGTBIQ+` | `foc_lgtbiq` | decimal | sí | Personas focalizadas: LGTBIQ+. | Opcional. 0 o vacío = sin focalización. |
+| 35 | `Personas con Discapacidad y sus Curadores` | `foc_discapacidad` | decimal | sí | Personas focalizadas: Personas con Discapacidad y sus Curadores. | Opcional. 0 o vacío = sin focalización. |
+| 36 | `Personas Vulnerables` | `foc_vulnerables` | decimal | sí | Personas focalizadas: Personas Vulnerables. | Opcional. 0 o vacío = sin focalización. |
+| 37 | `Habitantes de o en Calle` | `foc_habitantes_calle` | decimal | sí | Personas focalizadas: Habitantes de o en Calle. | Opcional. 0 o vacío = sin focalización. |
+| 38 | `Víctimas de Violencia de Género` | `foc_vbg` | decimal | sí | Personas focalizadas: Víctimas de Violencia de Género. | Opcional. 0 o vacío = sin focalización. |
+| 39 | `Víctimas del Conflicto` | `foc_victimas_conflicto` | decimal | sí | Personas focalizadas: Víctimas del Conflicto. | Opcional. 0 o vacío = sin focalización. |
+| 40 | `Reincorporados` | `foc_reincorporados` | decimal | sí | Personas focalizadas: Reincorporados. | Opcional. 0 o vacío = sin focalización. |
+| 41 | `Comunales` | `foc_comunales` | decimal | sí | Personas focalizadas: Comunales. | Opcional. 0 o vacío = sin focalización. |
+| 42 | `Interreligioso` | `foc_interreligioso` | decimal | sí | Personas focalizadas: Interreligioso. | Opcional. 0 o vacío = sin focalización. |
+| 43 | `Rescatistas de Animales` | `foc_rescatistas_animales` | decimal | sí | Personas focalizadas: Rescatistas de Animales. | Opcional. 0 o vacío = sin focalización. |
+| 44 | `Migrantes` | `foc_migrantes` | decimal | sí | Personas focalizadas: Migrantes. | Opcional. 0 o vacío = sin focalización. |
+| 45 | `Retornados` | `foc_retornados` | decimal | sí | Personas focalizadas: Retornados. | Opcional. 0 o vacío = sin focalización. |
+| 46 | `Otros` | `foc_otros` | decimal | sí | Personas focalizadas: Otros. | Opcional. 0 o vacío = sin focalización. |
+| 47 | `¿Cuál Otro?` | `foc_otro_cual` | texto | sí | Descripción del grupo en 'Otros'. |  |
 
 ## EVAPLAN · Informe de Plan Indicativo MR
 
@@ -84,13 +107,13 @@ Metas de resultado (MR) de UNA entidad con programación vigente y resultado rep
 | 11 | `Variable` | `variables` | texto | no | Definición de variables. |  |
 | 12 | `Constante (K)` | `constante_k` | decimal | no | Constante de la fórmula. |  |
 | 13 | `Fórmula` | `formula` | texto | no | Fórmula del indicador. |  |
-| 14 | `Resultado` | `resultado` | decimal | no | Resultado reportado en el periodo de corte. |  |
+| 14 | `Resultado` | `resultado` | decimal | no | Último reporte ACUMULADO de la dependencia (✅ confirmado). |  |
 | 15 | `Valor Proyectado` | `valor_proyectado` | decimal | sí | Proyección reportada. |  |
 | 16 | `PG` | `valor_pg` | valor_np (2 columnas) | no | Meta del cuatrienio (Programación de Gobierno) vigente. | Reprogramada; puede diferir de 'pi_pg' (PI original). |
-| 17 | `2024` | `valor_2024` | valor_np (2 columnas) | no | Valor de la vigencia 2024. | Valor por vigencia. Vigencia cerrada: logro alcanzado; vigencia en curso: meta reprogramada (coincide 100 % con el bloque 'LOGRO / REPROGRAMACIÓN PLAN DE ACCIÓN' de Drive). Por confirmar. |
-| 18 | `2025` | `valor_2025` | valor_np (2 columnas) | no | Valor de la vigencia 2025. | Valor por vigencia. Vigencia cerrada: logro alcanzado; vigencia en curso: meta reprogramada (coincide 100 % con el bloque 'LOGRO / REPROGRAMACIÓN PLAN DE ACCIÓN' de Drive). Por confirmar. |
-| 19 | `2026` | `valor_2026` | valor_np (2 columnas) | no | Valor de la vigencia 2026. | Valor por vigencia. Vigencia cerrada: logro alcanzado; vigencia en curso: meta reprogramada (coincide 100 % con el bloque 'LOGRO / REPROGRAMACIÓN PLAN DE ACCIÓN' de Drive). Por confirmar. |
-| 20 | `2027` | `valor_2027` | valor_np (2 columnas) | no | Valor de la vigencia 2027. | Valor por vigencia. Vigencia cerrada: logro alcanzado; vigencia en curso: meta reprogramada (coincide 100 % con el bloque 'LOGRO / REPROGRAMACIÓN PLAN DE ACCIÓN' de Drive). Por confirmar. |
+| 17 | `2024` | `valor_2024` | valor_np (2 columnas) | no | Valor de la vigencia 2024. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
+| 18 | `2025` | `valor_2025` | valor_np (2 columnas) | no | Valor de la vigencia 2025. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
+| 19 | `2026` | `valor_2026` | valor_np (2 columnas) | no | Valor de la vigencia 2026. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
+| 20 | `2027` | `valor_2027` | valor_np (2 columnas) | no | Valor de la vigencia 2027. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
 | 21 | `Principal Logro en Función del Cumplimiento` | `principal_logro` | texto | sí | Narrativa reportada por la entidad. |  |
 | 22 | `Análisis del Logro` | `analisis_logro` | texto | sí | Análisis del logro reportado. |  |
 | 23 | `Dificultades o Gestiones` | `dificultades_gestiones` | texto | sí | Dificultades o gestiones reportadas. |  |
@@ -179,10 +202,10 @@ Libro maestro del Plan Indicativo 2024-2027: todas las metas de producto de TODA
 | 34 | `2026.` | `pi_2026` | valor_np (2 columnas) | no | Programación original 2026. |  |
 | 35 | `2027.` | `pi_2027` | valor_np (2 columnas) | no | Programación original 2027. |  |
 | 36 | `PG 2024-2027` | `valor_pg` | valor_np (2 columnas) | no | PG vigente (reprogramado). |  |
-| 37 | `VAL ALC 2024` | `valor_2024` | valor_np (2 columnas) | no | Valor 2024 (logro). | Valor por vigencia. Vigencia cerrada: logro alcanzado; vigencia en curso: meta reprogramada (coincide 100 % con el bloque 'LOGRO / REPROGRAMACIÓN PLAN DE ACCIÓN' de Drive). Por confirmar. |
-| 38 | `VAL ALC 2025` | `valor_2025` | valor_np (2 columnas) | no | Valor 2025 (logro). | Valor por vigencia. Vigencia cerrada: logro alcanzado; vigencia en curso: meta reprogramada (coincide 100 % con el bloque 'LOGRO / REPROGRAMACIÓN PLAN DE ACCIÓN' de Drive). Por confirmar. |
-| 39 | `2026` | `valor_2026` | valor_np (2 columnas) | no | Valor 2026 (reprogramado). | Valor por vigencia. Vigencia cerrada: logro alcanzado; vigencia en curso: meta reprogramada (coincide 100 % con el bloque 'LOGRO / REPROGRAMACIÓN PLAN DE ACCIÓN' de Drive). Por confirmar. |
-| 40 | `2027` | `valor_2027` | valor_np (2 columnas) | no | Valor 2027 (reprogramado). | Valor por vigencia. Vigencia cerrada: logro alcanzado; vigencia en curso: meta reprogramada (coincide 100 % con el bloque 'LOGRO / REPROGRAMACIÓN PLAN DE ACCIÓN' de Drive). Por confirmar. |
+| 37 | `VAL ALC 2024 / 2024` | `valor_2024` | valor_np (2 columnas) | no | Valor de la vigencia 2024: logro si el encabezado dice 'VAL ALC', meta si no. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
+| 38 | `VAL ALC 2025 / 2025` | `valor_2025` | valor_np (2 columnas) | no | Valor de la vigencia 2025: logro si el encabezado dice 'VAL ALC', meta si no. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
+| 39 | `2026 / VAL ALC 2026` | `valor_2026` | valor_np (2 columnas) | no | Valor de la vigencia 2026: logro si el encabezado dice 'VAL ALC', meta si no. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
+| 40 | `2027 / VAL ALC 2027` | `valor_2027` | valor_np (2 columnas) | no | Valor de la vigencia 2027: logro si el encabezado dice 'VAL ALC', meta si no. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
 | 41 | `VERIFICACIÓN DEL COMPORTAMIENTO DE META EN REPROGRAMACIÓN` | `verificacion_comportamiento` | texto | sí | Comportamiento verificado por fórmula del libro (ACUMULADO, FLUJO…). | Puede contener 'ERROR' (fórmula fallida). |
 | 42 | `EDT…` | `edt` | si_no | sí | ¿Meta con EDT? (el encabezado trae la fecha de corte). |  |
 | 43 | `ESTADO DE LA META DE PRODUCTO` | `estado_meta` | texto | sí | EN EJECUCIÓN / CUMPLIDA. |  |
@@ -226,10 +249,10 @@ Libro maestro: todas las metas de resultado de TODAS las entidades.
 | 25 | `2026` | `pi_2026` | valor_np (2 columnas) | no | Programación original 2026. |  |
 | 26 | `2027` | `pi_2027` | valor_np (2 columnas) | no | Programación original 2027. |  |
 | 27 | `PG` | `valor_pg` | valor_np (2 columnas) | no | PG vigente (reprogramado). |  |
-| 28 | `VAL ALC 2024` | `valor_2024` | valor_np (2 columnas) | no | Valor 2024 (logro). |  |
-| 29 | `2025` | `valor_2025` | valor_np (2 columnas) | no | Valor 2025. |  |
-| 30 | `2026` | `valor_2026` | valor_np (2 columnas) | no | Valor 2026. |  |
-| 31 | `2027` | `valor_2027` | valor_np (2 columnas) | no | Valor 2027. |  |
+| 28 | `VAL ALC 2024 / 2024` | `valor_2024` | valor_np (2 columnas) | no | Valor de la vigencia 2024: logro si el encabezado dice 'VAL ALC', meta si no. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
+| 29 | `2025 / VAL ALC 2025` | `valor_2025` | valor_np (2 columnas) | no | Valor de la vigencia 2025: logro si el encabezado dice 'VAL ALC', meta si no. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
+| 30 | `2026 / VAL ALC 2026` | `valor_2026` | valor_np (2 columnas) | no | Valor de la vigencia 2026: logro si el encabezado dice 'VAL ALC', meta si no. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
+| 31 | `2027 / VAL ALC 2027` | `valor_2027` | valor_np (2 columnas) | no | Valor de la vigencia 2027: logro si el encabezado dice 'VAL ALC', meta si no. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
 | 32 | `VERIFICACIÓN DEL COMPORTAMIENTO DE META EN REPROGRAMACIÓN` | `verificacion_comportamiento` | texto | sí | Comportamiento verificado. | 27 de 75 filas en 'ERROR'. |
 
 ## Vocabularios controlados

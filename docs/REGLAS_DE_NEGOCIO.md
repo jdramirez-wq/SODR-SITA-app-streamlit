@@ -40,8 +40,29 @@ Las reglas viven en `src/evaplan/validaciones.py` y se prueban con los ejemplos 
 | P6 | `CON EJECUCION` ⇔ obligaciones > 0 | ✅ | advertencia | `ejecucion_financiera_vs_fisica` |
 | P7 | Presupuesto definitivo de la meta > recursos de la vigencia programados en el PI | ❓ | advertencia | `presupuesto_vs_recursos_pi` |
 
+## Seguimiento por meta (matriz de la página)
+Se calculan **hechos**, sin umbrales: no existe un cronograma único de ejecución, así que no se inventan semáforos.
+| Id | Hecho / incoherencia | Estado | Severidad | Hallazgo |
+|---|---|---|---|---|
+| S1 | Vigencia en curso = primer año del Plan Indicativo sin `VAL ALC` en el encabezado | ✅ | — | `inferir_vigencia` |
+| S2 | `% avance vs meta vigencia = Resultado / meta de la vigencia` (meta > 0) | ✅ | — | columna |
+| S3 | Acumulado/Capacidad: `avance cuatrienio = Σ logros de vigencias cerradas + Resultado`; `% vs PG` | ✅ ❓1 | — | columnas |
+| S4 | `% ejecución financiera = Σ obligaciones / Σ definitivo` de las actividades de la meta | ✅ | — | columna |
+| S5 | Avance de actividades: promedio global **y por proyecto de inversión** (el prompt lo exige por proyecto) | ✅ | — | `avance_por_proyecto` |
+| S6 | Meta del Plan Indicativo sin reporte en EVAPLAN | ✅ ❓ | advertencia | `sin_reporte` |
+| S7 | Avance (Resultado > 0) con obligaciones = 0 y sin mencionar gestión/donación/cofinanciación/sin costo | ✅ | advertencia | `avance_sin_ejecucion_financiera` |
+| S8 | Lo mismo pero la narrativa sí menciona gestión (verificar soporte) | ✅ | info | `avance_sin_ejecucion_con_gestion` |
+| S9 | Obligaciones > 0, Resultado = 0 y sin explicación en Dificultades | ✅ | advertencia | `ejecucion_sin_avance_sin_explicacion` |
+| S10 | Actividades con obligaciones y sin avance físico (crítico en actividades) | ✅ | advertencia | `actividades_con_obligaciones_sin_avance` |
+| S11 | Avance sin Principal Logro/Análisis; resultado 0 con logro/análisis | ✅ | advertencia / info | `resultado_sin_narrativa`, `narrativa_con_resultado_cero` |
+| S12 | Reporte con avance pero sin meta programada (NP o 0); resultado supera la meta | ✅ | advertencia / info | `reporte_sin_meta_programada`, `resultado_supera_meta_vigencia` |
+| S13 | Meta sin actividades en Centralizadas | — | info | `sin_plan_de_accion` |
+| S14 | Encabezado del año cerrado sin `VAL ALC` (o abierto con `VAL ALC`) en Drive | ✅ | advertencia | `vigencia_*_marca_logro` |
+
+*Lo que se deja al LLM/analista:* si el avance es "suficiente", la gravedad de cada alerta, la desconexión
+jerárquica (se entrega la brecha numérica `meta vs actividades`, no un veredicto), la calidad narrativa y el dictamen.
+
 ## Pendiente de definir (requiere al equipo)
-- **Cumplimiento por periodo:** cómo se compara `Resultado` con lo programado según el comportamiento y el
-  corte (trimestre, semestre…). Es el cálculo central del seguimiento y aún no se ha implementado.
-- Semáforos / umbrales de alerta (¿qué % es "en riesgo"?).
-- Tratamiento de metas reprogramadas y de `Reducción Anual`.
+- Tratamiento de `Reducción Anual` (metas de resultado) y de metas reprogramadas dentro del cuatrienio.
+- Metas de resultado en la página de seguimiento.
+- Semáforos: **descartados por ahora** (no hay umbrales únicos); se retomarán si el equipo define un cronograma.

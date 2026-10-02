@@ -32,23 +32,28 @@ abreviado con caracteres perdidos en Centralizadas).
 
 ## 2. Hallazgos
 
-### H1 · El export de EVAPLAN coincide con el bloque vigente de Drive, no con el Plan Indicativo original ✅
+### H1 · El export de EVAPLAN coincide con el bloque vigente de Drive, no con el Plan Indicativo original ✅ (confirmado por el equipo)
 Para las 10 metas comunes, los 5 valores (PG y 2024-2027) del export de EVAPLAN son **idénticos** a las columnas
 `PG 2024-2027`, `VAL ALC 2024`, `VAL ALC 2025`, `2026`, `2027` de Drive (bloque *LOGRO / REPROGRAMACIÓN PLAN DE
 ACCIÓN*), incluidas las celdas `NP`. En cambio, frente al bloque original (`PLAN INDICATIVO - PI`) **3 de las 10
 metas difieren**: son metas reprogramadas.
 - *Implicación:* para seguimiento hay que comparar contra el bloque vigente. El PI original sirve solo para
   auditar reprogramaciones.
-- ❓ Parece que en las vigencias cerradas (2024, 2025) estos valores son *logro alcanzado* y en las abiertas
-  (2026, 2027) la *meta reprogramada*. Lo respalda que, en todo el libro, la regla de Mantenimiento Stock se
-  rompe 17 veces en este bloque (logros menores a la meta) y ninguna vez en el bloque original.
+- ✅ **Confirmado:** en las vigencias cerradas esos valores son *logro alcanzado*; en las pendientes, la *meta*, que se
+  modifica si se reprograma. El técnico **renombra el encabezado** de la columna del año que cierra (`2025` →
+  `VAL ALC 2025`) en las columnas `AK:AN` de la hoja MP. Por eso el lector acepta ambos nombres y la vigencia en
+  curso se detecta sola: es el primer año **sin** `VAL ALC` (hoy, 2026). Respaldo en los datos: la regla de
+  Mantenimiento Stock se rompe 17 veces en este bloque (logros menores a la meta) y ninguna en el original.
+- ⚠️ En la hoja **MR** solo `2024` está marcado; `2025` ya cerró pero conserva el encabezado simple. La herramienta
+  lo reporta (`vigencia_cerrada_sin_marca_logro`): puede que el logro 2025 de las metas de resultado no se haya
+  cargado.
 
-### H2 · El export de EVAPLAN venía incompleto: faltaban 2 de 12 metas de la entidad ✅
-Drive tiene 12 metas de la entidad; el export de EVAPLAN, 10. Las dos ausentes tienen programación y logros en
-Drive. ❓ Causa desconocida (¿filtro por metas con reporte en el periodo?). **Esta es la forma concreta en que
-el export "se desactualiza"**: en los valores no hubo diferencias hoy, pero sí en la cobertura.
-- *Implicación:* el cruce nunca debe asumir que EVAPLAN trae todas las metas; la regla `mp_falta_en_evaplan` lo
-  detecta.
+### H2 · Faltaban 2 de 12 metas de la entidad en el export: son metas SIN REPORTE ✅/❓
+Drive tiene 12 metas de la entidad; el export de EVAPLAN, 10. Según el equipo, la causa más probable es que la
+dependencia **no reportó** esas metas (EVAPLAN solo exporta lo reportado). En los valores no hubo diferencias hoy;
+la diferencia está en la cobertura.
+- *Implicación:* el universo de metas de una dependencia es **el Plan Indicativo de Drive**, no el export. La
+  página lo usa así y muestra las metas sin reporte como resultado de seguimiento (`sin_reporte`).
 
 ### H3 · Las reglas del comportamiento del indicador casi siempre se cumplen en la programación original ✅/❓
 Prueba sobre el **PI original** de las 447 metas de producto del libro (`pg_vs_anios`):

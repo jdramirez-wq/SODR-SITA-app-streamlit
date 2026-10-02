@@ -31,13 +31,13 @@ st.subheader("💡 Selecciona un trámite para comenzar:")
 col1, col2 = st.columns(2)
 
 with col1:
-    st.markdown("### 📊 Auditoría de Seguimiento EVAPLAN")
+    st.markdown("### 📊 Seguimiento EVAPLAN")
     st.write(
-        "Consolidación de Plan Indicativo (PI) con Plan de Acción (PA), "
-        "generación de reportes PDF/Excel y construcción dinámica de Prompts para el BOT auditor."
+        "Cruce de lo reportado en EVAPLAN con el Plan Indicativo (Drive) y el Plan de Acción: metas sin reporte, "
+        "avance y ejecución financiera, reportes PDF/Excel y Prompt para el BOT auditor."
     )
     # Enrutamiento directo y limpio por nombre de archivo
-    st.page_link("pages/1_Auditoria_EVAPLAN.py", label="Ir a Auditoría EVAPLAN", icon="📊", use_container_width=True)
+    st.page_link("pages/1_Auditoria_EVAPLAN.py", label="Ir a Seguimiento EVAPLAN", icon="📊", use_container_width=True)
 
 with col2:
     st.markdown("### 📝 POAI 2027")
