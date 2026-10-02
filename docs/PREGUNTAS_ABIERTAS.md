@@ -30,10 +30,10 @@ Cuando se resuelva una, se mueve a [REGLAS_DE_NEGOCIO.md](REGLAS_DE_NEGOCIO.md) 
 ## Surgidas al probar con 10 dependencias reales
 3. **Actividades con avance 0 y observación vacía (`.`):** la circular prohíbe los vacíos. ¿Activamos una alerta por
    registro? Hoy solo se alerta si además hay obligaciones.
-4. **Z023 consolidado:** serviría para saber qué proyectos de otras dependencias aportan a cada meta. Como no puede
-   quedar en el repositorio ni en una carpeta de lectura abierta, la propuesta es **subirlo en cada sesión** (cuarto
-   cuadro opcional, como los archivos de EVAPLAN: se usa en memoria y no se guarda). Para diseñarlo hace falta ver su
-   estructura: ¿pueden indicarme en Drive el archivo para leerlo solo aquí, durante el análisis, sin copiarlo al repo?
+4. **Z023 consolidado:** ubicado en la carpeta `Fuentes EVAPLAN` de Drive (`Z023_PDD2024-2027_Cons.xlsm`, 8.8 MB, con
+   macros). El conector de Drive no puede leerlo en ese formato (solo `.xlsx` y Hojas de cálculo de Google; la descarga
+   completa desborda el tamaño de mensaje). **Se necesita una muestra pequeña** (ver `docs/FUENTES_DE_DATOS.md`,
+   sección Z023). Por tratarse de información no pública se subiría por sesión, nunca al repositorio.
 
 ## Decisiones de producto
 5. **Prompt:** el bloque opcional "Hechos verificados" queda **activado por defecto** (se puede desmarcar en la barra
@@ -46,7 +46,5 @@ Cuando se resuelva una, se mueve a [REGLAS_DE_NEGOCIO.md](REGLAS_DE_NEGOCIO.md) 
 8. **Repo público:** Streamlit Community Cloud indica que **sí admite repos privados** (pide un permiso adicional de
    GitHub, `repo`), aunque no pude abrir su documentación oficial para confirmarlo ni sus límites vigentes.
    ¿Pueden probar a pasar el repo a privado en `share.streamlit.io` (Settings → Repository)?
-9. **Libro de Drive del Plan Indicativo:** para que la app lo lea por enlace debe estar compartido como "cualquiera con el
-   enlace". Dado que hay información que no debe ser pública, ¿el Plan Indicativo sí puede estar así? Si no, la
-   alternativa es una cuenta de servicio de Google (gratuita): el libro se comparte solo con ella y sus credenciales
-   viven en los secretos de Streamlit, nunca en el repositorio.
+9. ~~**Libro de Drive del Plan Indicativo:** ¿puede estar compartido por enlace?~~ **Resuelto (2-oct):** de momento no hay
+   problema en que esté abierto por enlace. Si cambia, la alternativa es una cuenta de servicio de Google.

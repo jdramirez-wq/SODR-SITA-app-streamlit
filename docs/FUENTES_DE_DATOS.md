@@ -37,6 +37,28 @@ Si la estructura de un archivo cambia, el lector lanza `EsquemaError` indicando 
 - Cadena de Valor (`.docx`), reporte MGA (`.xml`) y Z023 (`.xlsx`, hoja `Hoja1`). Pendiente analizarlos y
   añadirlos al diccionario.
 
+## Z023 consolidado (pendiente de contrato de datos)
+**Qué es** (según las notas del equipo del 1-oct): repositorio maestro curado (> 6000 filas) que unifica los Z023 de SAP
+(módulo PPM) del PDD 2024-2027 y corrige los errores de formulación (metas faltantes, códigos MGA erróneos, área
+funcional). **Es información no pública**: no va al repositorio ni a una carpeta de lectura abierta; se subiría por
+sesión con `st.file_uploader` y se usaría solo en memoria.
+
+**Por qué serviría:** liga cada proyecto con su meta de producto y distingue el *Centro Gestor* (dueño del proyecto)
+de la *Dependencia responsable* de la meta. Con eso la página podría mostrar, para cada meta, **qué proyectos de otras
+dependencias le aportan**, que es justo lo que hoy no se ve en un solo Centralizadas (metas compartidas).
+
+**Llaves probables** (a confirmar con la muestra):
+- Código PS de la actividad = `<proyecto>/1/<objetivo específico>/<producto>/<actividad>`, el mismo formato que
+  `Cód. Actividad` de Centralizadas.
+- DNP cruza con `BPIN + Producto MGA`.
+- Los proyectos de entidades descentralizadas solo llegan a PPM (no tienen código PS).
+
+**Para poder hacerlo** hace falta una muestra legible:
+1. Abrir `Z023_PDD2024-2027_Cons.xlsm` y guardar una copia como **`.xlsx`** (sin macros) de nombre
+   `Z023_muestra.xlsx` en la carpeta `Fuentes EVAPLAN`.
+2. Dejar los encabezados y unas 50-100 filas (borrar el resto) de la hoja con los datos consolidados.
+3. Opcional: si hay datos sensibles, cambiar nombres de personas o cifras; solo importa la estructura.
+
 ## Insumos candidatos a leerse desde Drive (en lugar de descarga manual)
 - Plan Indicativo (ya se lee de Drive en la página POAI).
 - Por definir con el equipo: ver [PREGUNTAS_ABIERTAS.md](PREGUNTAS_ABIERTAS.md).

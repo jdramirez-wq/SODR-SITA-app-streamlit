@@ -21,7 +21,7 @@ Estructura, `CLAUDE.md`, README, CI, plantillas, reglas de privacidad.
 ## Fase 3 — Pulir la primera versión
 - [x] Probada en navegador real con 10 dependencias reales; cifras verificadas de forma independiente (ver análisis 2b)
 - [ ] **Z023 consolidado** subido por sesión (cuarto cuadro opcional; nunca guardado) para mapear los proyectos de otras
-      dependencias que aportan a cada meta. Pendiente: ver su estructura (pregunta 4)
+      dependencias que aportan a cada meta. Pendiente: ver una muestra de su estructura (pregunta 4)
 - [x] Avance por registro (no hay forma sencilla de agrupar por actividad)
 - [x] Criterio estricto por defecto para el avance 0 (Dificultades), con casilla flexible
 - [ ] Resolver lo que queda en [PREGUNTAS_ABIERTAS.md](PREGUNTAS_ABIERTAS.md) (reglas del PG, periodo, histórico)
@@ -33,7 +33,7 @@ Estructura, `CLAUDE.md`, README, CI, plantillas, reglas de privacidad.
 - [ ] Probar el paso del repo a privado en Streamlit Community Cloud
 - [ ] Mover `URL_DRIVE_EXCEL` de `pages/2_POAI_2027.py` a secretos y revisar permisos del libro en Drive
 - [ ] Decidir quién puede abrir la app (limitar por correo institucional)
-- [ ] Si el Plan Indicativo no puede estar "abierto con el enlace": cuenta de servicio de Google (pregunta 9)
+- [x] Plan Indicativo abierto por enlace: aceptado por el equipo de momento (si cambia: cuenta de servicio de Google)
 
 ## Fase 5 — Evolución
 - [ ] Guardar cortes históricos para ver la evolución de una dependencia (si se confirma que interesa)
