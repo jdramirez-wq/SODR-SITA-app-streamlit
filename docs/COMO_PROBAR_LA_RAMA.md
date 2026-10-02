@@ -12,7 +12,9 @@ mientras los cambios estén en otra rama, **nada de lo publicado cambia**. Para 
    - **Branch:** la rama a probar (p. ej. `claude/determined-thompson-6vlmqe`)
    - **Main file path:** `app.py`
    - **App URL:** un nombre distinto al de la app oficial (p. ej. `seguimiento-evaplan-prueba`)
-3. Antes de pulsar *Deploy*, abre **Advanced settings → Secrets** y pega:
+3. Antes de pulsar *Deploy*, abre **Advanced settings** y:
+   - **Python version:** elige **3.12**. (La suite de pruebas pasa en 3.11, 3.12 y 3.13; 3.14 no se ha probado.)
+   - **Secrets:** borra el texto de ejemplo (`DB_USERNAME`, `DB_TOKEN`… es solo una muestra en gris) y pega:
    ```toml
    URL_DRIVE_PLAN_INDICATIVO = "https://docs.google.com/spreadsheets/d/<ID_DEL_LIBRO>/export?format=xlsx"
    ```
