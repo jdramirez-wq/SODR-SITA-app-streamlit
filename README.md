@@ -17,7 +17,17 @@ pip install -r requirements-dev.txt
 streamlit run app.py
 ```
 
+## Contrato de datos
+Los archivos de EVAPLAN y el Plan Indicativo de Drive se leen con lectores tipados (`src/evaplan/`), cuyo
+diccionario de datos es la única fuente de verdad:
+```python
+from src.evaplan import lectura as L, validaciones as V
+hallazgos = V.validar_todo(pi_mp_evaplan=L.leer_pi_mp_evaplan(archivo), centralizadas=L.leer_centralizadas(otro))
+```
+
 ## Documentación
+- [Análisis de las fuentes](docs/ANALISIS_FUENTES_EVAPLAN.md) · [Diccionario de datos](docs/DICCIONARIO_DE_DATOS.md)
+- [Reglas de negocio](docs/REGLAS_DE_NEGOCIO.md) · [Preguntas abiertas](docs/PREGUNTAS_ABIERTAS.md)
 - [Cómo trabajamos (Git, ramas, Claude)](docs/FLUJO_DE_TRABAJO.md)
 - [Arquitectura](docs/ARQUITECTURA.md)
 - [Fuentes de datos](docs/FUENTES_DE_DATOS.md)
