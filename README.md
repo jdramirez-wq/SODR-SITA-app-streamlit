@@ -28,6 +28,7 @@ hallazgos = V.validar_todo(pi_mp_evaplan=L.leer_pi_mp_evaplan(archivo), centrali
 ## Documentación
 - [Análisis de las fuentes](docs/ANALISIS_FUENTES_EVAPLAN.md) · [Diccionario de datos](docs/DICCIONARIO_DE_DATOS.md)
 - [Reglas de negocio](docs/REGLAS_DE_NEGOCIO.md) · [Preguntas abiertas](docs/PREGUNTAS_ABIERTAS.md)
+- [Cómo probar una rama en Streamlit](docs/COMO_PROBAR_LA_RAMA.md)
 - [Cómo trabajamos (Git, ramas, Claude)](docs/FLUJO_DE_TRABAJO.md)
 - [Arquitectura](docs/ARQUITECTURA.md)
 - [Fuentes de datos](docs/FUENTES_DE_DATOS.md)

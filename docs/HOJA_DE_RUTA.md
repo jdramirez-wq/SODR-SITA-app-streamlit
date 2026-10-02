@@ -15,7 +15,7 @@ Estructura, `CLAUDE.md`, README, CI, plantillas, reglas de privacidad.
 - [x] Metas sin reporte, hechos objetivos por meta, avance de actividades **por proyecto**
 - [x] Excel integrado y PDF por meta (mismos contenidos que antes + hechos), prompt con vigencia automática
 - [x] Vigencia detectada por los encabezados `VAL ALC`; enlace de Drive en secretos
-- [ ] **Configurar el secreto `URL_DRIVE_PLAN_INDICATIVO` en Streamlit Cloud antes de publicar**
+- [ ] **Configurar el secreto `URL_DRIVE_PLAN_INDICATIVO` en Streamlit Cloud antes de publicar** (guía: [COMO_PROBAR_LA_RAMA.md](COMO_PROBAR_LA_RAMA.md))
 - [ ] Revisión con los compañeros de la SODR con una dependencia real
 
 ## Fase 3 — Pulir la primera versión
