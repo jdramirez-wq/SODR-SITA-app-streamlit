@@ -13,6 +13,7 @@ import math
 
 import pandas as pd
 
+from . import formato as F
 from .aportes import entidades_de, equivalencias_z023
 
 COLUMNAS_HALLAZGO = ["regla", "severidad", "fuente", "llave", "fila_excel", "detalle"]
@@ -30,7 +31,12 @@ def _na(x) -> bool:
 
 
 def _fmt(x) -> str:
-    return "—" if _na(x) else (f"{x:,.2f}".rstrip("0").rstrip(".") if isinstance(x, float) else str(x))
+    """Cantidades con el formato único (formato.py): punto de miles, coma decimal, 'sin dato'."""
+    return F.numero(x) if isinstance(x, (int, float)) or _na(x) else str(x)
+
+
+def _pesos(x) -> str:
+    return F.pesos(x)
 
 
 def _cerca(a, b) -> bool:
@@ -60,15 +66,15 @@ def codigo_mp_coherente(df: pd.DataFrame, fuente: str) -> pd.DataFrame:
             continue
         if "programa_codigo" in df.columns and not _na(r["programa_codigo"]) and r["programa_codigo"] != r["programa_mp"]:
             h.append(_h("codigo_mp_vs_programa", "error", fuente, mp,
-                        f"programa {r['programa_codigo']} ≠ {r['programa_mp']} del código", r["fila_excel"]))
+                        f"programa {r['programa_codigo']} distinto de {r['programa_mp']} del código", r["fila_excel"]))
         if "subprograma_codigo" in df.columns and not _na(r["subprograma_codigo"]) \
                 and str(r["subprograma_codigo"]).zfill(2) != r["subprograma_mp"]:
             h.append(_h("codigo_mp_vs_subprograma", "error", fuente, mp,
-                        f"subprograma {r['subprograma_codigo']} ≠ {r['subprograma_mp']} del código", r["fila_excel"]))
+                        f"subprograma {r['subprograma_codigo']} distinto de {r['subprograma_mp']} del código", r["fila_excel"]))
         if "codigo_producto_mga" in df.columns and not _na(r["codigo_producto_mga"]) \
                 and r["codigo_producto_mga"] != r["producto_mga_mp"]:
             h.append(_h("codigo_mp_vs_producto_mga", "advertencia", fuente, mp,
-                        f"producto MGA {r['codigo_producto_mga']} ≠ {r['producto_mga_mp']} del código", r["fila_excel"]))
+                        f"producto MGA {r['codigo_producto_mga']} distinto de {r['producto_mga_mp']} del código", r["fila_excel"]))
     return _como_df(h)
 
 
@@ -154,10 +160,10 @@ def pg_vs_anios(df: pd.DataFrame, fuente: str, prefijo: str = "valor", llave: st
         msg = None
         if comp in ("Incremento Acumulado", "Incremento Capacidad"):
             if not _cerca(sum(valores), pg):
-                msg = f"{comp}: suma de años = {_fmt(sum(valores))} ≠ PG {_fmt(pg)}"
+                msg = f"{comp}: suma de años = {_fmt(sum(valores))} distinto de PG {_fmt(pg)}"
         elif comp == "Incremento Flujo":
             if not _na(anios[-1]) and not _cerca(anios[-1], pg):
-                msg = f"{comp}: valor 2027 = {_fmt(anios[-1])} ≠ PG {_fmt(pg)}"
+                msg = f"{comp}: valor 2027 = {_fmt(anios[-1])} distinto de PG {_fmt(pg)}"
         elif comp == "Mantenimiento Stock":
             malos = [a for a, v in zip(ANIOS, anios) if not _na(v) and not _cerca(v, pg)]
             if malos:
@@ -180,10 +186,10 @@ def presupuesto_invariantes(ce: pd.DataFrame) -> pd.DataFrame:
             h.append(_h("presupuesto_negativo", "error", "centralizadas", k, "hay cifras presupuestales negativas", f))
         if obl > defi + 0.5:
             h.append(_h("obligaciones_mayores_definitivo", "error", "centralizadas", k,
-                        f"obligaciones {_fmt(obl)} > definitivo {_fmt(defi)}", f))
+                        f"obligaciones {_pesos(obl)} > definitivo {_pesos(defi)}", f))
         elif disp > defi - obl + 0.5:
             h.append(_h("disponible_excede_saldo", "error", "centralizadas", k,
-                        f"disponible {_fmt(disp)} > definitivo − obligaciones = {_fmt(defi - obl)}", f))
+                        f"disponible {_pesos(disp)} > definitivo − obligaciones = {_pesos(defi - obl)}", f))
     return _como_df(h)
 
 
@@ -198,9 +204,9 @@ def avance_consistente(ce: pd.DataFrame) -> pd.DataFrame:
         calc = (0.0 if _na(ejec) else ejec) / prog * 100
         if not _na(pct) and abs(calc - pct) > 0.01:
             h.append(_h("avance_no_coincide", "error", "centralizadas", k,
-                        f"% reportado {_fmt(pct)} ≠ ejecutada/programada = {calc:.2f}", f))
+                        f"% reportado {F.porcentaje_100(pct, 2)} distinto de ejecutada/programada = {F.porcentaje_100(calc, 2)}", f))
         if calc > 100.0001:
-            h.append(_h("avance_supera_100", "advertencia", "centralizadas", k, f"avance {calc:.1f} % > 100 %", f))
+            h.append(_h("avance_supera_100", "advertencia", "centralizadas", k, f"avance {F.porcentaje_100(calc)} > 100 %", f))
     return _como_df(h)
 
 
@@ -215,15 +221,15 @@ def ejecucion_financiera_vs_fisica(ce: pd.DataFrame) -> pd.DataFrame:
         if not _na(obl) and obl > 0 and sin_avance and programada:
             if _na(r["observacion"]):
                 h.append(_h("financiero_sin_fisico", "advertencia", "centralizadas", k,
-                            f"obligaciones {_fmt(obl)} sin avance físico y sin observación que lo explique", f))
+                            f"obligaciones {_pesos(obl)} sin avance físico y sin observación que lo explique", f))
             else:
                 h.append(_h("financiero_sin_fisico_con_observacion", "info", "centralizadas", k,
-                            f"obligaciones {_fmt(obl)} sin avance físico; la observación lo explica: "
+                            f"obligaciones {_pesos(obl)} sin avance físico; la observación lo explica: "
                             f"«{str(r['observacion'])[:80]}»", f))
         con = str(r["estado_actividad"]).upper().startswith("CON")
         if not _na(obl) and ((obl > 0) != con) and not _na(r["estado_actividad"]):
             h.append(_h("estado_vs_obligaciones", "advertencia", "centralizadas", k,
-                        f"estado '{r['estado_actividad']}' con obligaciones {_fmt(obl)}", f))
+                        f"estado '{r['estado_actividad']}' con obligaciones {_pesos(obl)}", f))
     return _como_df(h)
 
 
@@ -261,8 +267,8 @@ def presupuesto_vs_recursos_pi(ce: pd.DataFrame, drive_mp: pd.DataFrame, anio: i
     for mp, definitivo in por_mp.items():
         if mp in prog.index and not _na(prog[mp]) and prog[mp] > 0 and definitivo > prog[mp] + 0.5:
             h.append(_h("ppto_supera_recursos_pi", "advertencia", "centralizadas", mp,
-                        f"definitivo {_fmt(definitivo)} > recursos {anio} del PI {_fmt(prog[mp])} "
-                        f"({definitivo / prog[mp] * 100:.0f} %)"))
+                        f"definitivo {_pesos(definitivo)} > recursos {anio} del PI {_pesos(prog[mp])} "
+                        f"({F.porcentaje(definitivo / prog[mp], 0)})"))
     return _como_df(h)
 
 
@@ -337,7 +343,7 @@ def centralizadas_vs_z023(centralizadas: pd.DataFrame, z: pd.DataFrame) -> pd.Da
                         int(g["fila_excel"].iloc[0])))
         elif mps := set(g["codigo_mp"].dropna()) - mp_por_actividad[act]:
             h.append(_h("mp_distinta_en_z023", "advertencia", "centralizadas", act,
-                        f"Meta en Centralizadas {sorted(mps)} ≠ meta en el Z023 {sorted(mp_por_actividad[act])}",
+                        f"Meta en Centralizadas {sorted(mps)} distinto de meta en el Z023 {sorted(mp_por_actividad[act])}",
                         int(g["fila_excel"].iloc[0])))
     return _como_df(h)
 

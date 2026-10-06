@@ -54,7 +54,7 @@ def test_presupuesto_y_avance_de_actividades_por_proyecto(matriz):
     assert f["ppto_definitivo"] == 2_500_000_000 and f["ppto_obligaciones"] == 1_500_000_000
     assert f["pct_ejecucion_financiera"] == pytest.approx(0.6)
     assert f["avance_actividades"] == pytest.approx(0.125)         # (25 % + 0 %) / 2
-    assert f["avance_por_proyecto"] == "PI99-000001: 12.5 %"
+    assert f["avance_por_proyecto"] == "PI99-000001: 12,5 %"
     assert f["n_proyectos"] == 1 and f["n_registros"] == 2
     assert not matriz.loc["MP9900202019902001", "tiene_plan_de_accion"]
 
@@ -65,8 +65,8 @@ def test_el_promedio_se_calcula_por_proyecto_cuando_hay_varios(datos):
     ce.loc[ce["codigo_actividad"] == "PI99-000001/1/2/01/03", ["codigo_mp", "codigo_proyecto", "avance_actividad_pct"]] = \
         ["MP9900101019901001", "PI99-000009", 80.0]
     f = S.construir_matriz(pi, ce, dr).set_index("codigo_mp").loc["MP9900101019901001"]
-    assert f["n_proyectos"] == 2 and "PI99-000001: 12.5 %" in f["avance_por_proyecto"] \
-        and "PI99-000009: 80.0 %" in f["avance_por_proyecto"]
+    assert f["n_proyectos"] == 2 and "PI99-000001: 12,5 %" in f["avance_por_proyecto"] \
+        and "PI99-000009: 80,0 %" in f["avance_por_proyecto"]
 
 
 def test_focalizacion_replica_la_logica_original(datos):
@@ -118,7 +118,7 @@ def test_pipeline_completo_y_reportes():
     assert r.vigencia == 2026 and r.usa_drive and r.resumen["metas_sin_reporte"] == 1
     assert not r.calidad.empty and (r.calidad["severidad"] != "error").all()
     wb = load_workbook(io.BytesIO(reportes.a_excel(r.matriz, r.hallazgos, r.calidad)))
-    assert wb.sheetnames == ["MP_PI_PA", "Hallazgos", "Sin_reporte", "Calidad_de_datos"]
+    assert wb.sheetnames == ["Leeme", "MP_PI_PA", "Hallazgos", "Sin_reporte", "Calidad_de_datos"]
     assert wb["MP_PI_PA"].max_row == 6
     pdf = reportes.a_pdf(r.matriz)
     assert pdf.startswith(b"%PDF") and len(pdf) > 3000
@@ -258,7 +258,7 @@ def test_avance_vacio_con_cantidad_programada_cuenta_como_cero_en_el_promedio():
     p = S._consolidar_plan_de_accion(ce).iloc[0]
     # P1: 100 y (vacío con programada 5 -> 0); el vacío con programada 0 no cuenta -> (100+0)/2 = 50 %; P2 sin dato
     assert p["avance_actividades"] == 0.5
-    assert p["avance_por_proyecto"] == "P1: 50.0 %"
+    assert p["avance_por_proyecto"] == "P1: 50,0 %"
     q = V.avance_vacio_con_programacion(ce)
     assert list(q["llave"]) == ["MP1"] and "1 de 4" in q.loc[0, "detalle"] and q.loc[0, "severidad"] == "info"
 

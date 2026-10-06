@@ -18,13 +18,14 @@ reportes. La usan compañeros del área (no programadores). Se mejora de forma i
 
 ## Estructura
 ```
-app.py                       Portada y menú de trámites
+app.py                       Navegación (st.navigation): Inicio, Seguimiento EVAPLAN (/seguimiento), POAI 2027 (/poai)
 pages/1_Auditoria_EVAPLAN.py SEGUIMIENTO EVAPLAN (página en foco): cruza Plan Indicativo (Drive + EVAPLAN) con
                              Centralizadas; matriz por meta, hallazgos, Excel/PDF y prompt del auditor. Interfaz
                              delgada sobre src/evaplan/pipeline.py
 pages/2_POAI_2027.py         (CONGELADA por ahora) Control previo de proyectos: Cadena de Valor (.docx), MGA (XML),
                              cruce con PI desde Drive (hoja "MP"), auditoría Z023, prompt IA
-interfaz/                    Componentes visuales de Streamlit: estilos.py (paleta, tarjetas) y seguimiento.py (vistas de la
+interfaz/                    Componentes visuales de Streamlit: estilos.py (paleta, tarjetas, alertas), portada.py, logo/icono SVG
+                             y seguimiento.py (vistas de la
                              página). Solo dibujan; qué se muestra lo decide src/evaplan/vista.py (probado). Tema en .streamlit/config.toml
 src/evaplan/                 Contrato de datos (SIN Streamlit): esquemas.py (diccionario), limpieza.py,
                              lectura.py (lectores tipados), validaciones.py (reglas y cruces), seguimiento.py
@@ -57,6 +58,11 @@ python scripts/generar_ejemplos.py      # regenera los archivos ficticios
   archivo fuente, se cambia el esquema, se regenera el diccionario y se actualiza el ejemplo ficticio.
 - Los lectores **fallan fuerte** (`EsquemaError`); las validaciones **reportan, no corrigen**. Lo "por
   confirmar" (docs/REGLAS_DE_NEGOCIO.md) nunca es `error`.
+- **Formato único de cifras** (`src/evaplan/formato.py`) en pantalla, PDF, Excel y textos de alertas: porcentajes SIEMPRE 0-100
+  con `%` (`22,3 %`), pesos `$ 3.884.965.483`, coma decimal, "sin dato" ≠ 0. Internamente las razones son fracciones 0-1
+  (`COLUMNAS_PORCENTAJE`); se convierten solo al mostrar/exportar (`reportes.matriz_legible`). Nada de emojis en el PDF.
+- **PDF para IA:** guía de lectura al inicio, bloque por meta con secciones numeradas e INICIO/FIN, y las condiciones objetivas de
+  las Alertas Tipo 1-3 del prompt (`condiciones.py`, umbrales del propio prompt). Probado con un modelo sencillo (Haiku).
 - Tipos: códigos como **texto**; `NP` (No Programado) ≠ 0 (columna `<campo>_np`); `'.'` = vacío; dinero es-CO
   con `moneda()` (el punto es miles) e indicadores con `decimal()` (el punto es decimal).
 - **Hechos, no juicios:** no hay umbrales únicos de cumplimiento (se desconoce el cronograma de ejecución). El código
@@ -105,7 +111,7 @@ python scripts/generar_ejemplos.py      # regenera los archivos ficticios
 - El enlace de Drive del Plan Indicativo está escrito en `pages/2_POAI_2027.py` (`URL_DRIVE_EXCEL`);
   debe pasar a `st.secrets` y la hoja debe tener permisos acordes (ver docs/HOJA_DE_RUTA.md).
 - `pages/2_POAI_2027.py` no usa aún `src/evaplan`; `requirements.txt` sin versiones fijadas.
-- Las páginas usan `use_container_width` (obsoleto en Streamlit reciente; sigue funcionando con aviso).
+- `pages/2_POAI_2027.py` aún usa `use_container_width` (obsoleto; las vistas nuevas usan `width="stretch"`).
 - Pendiente revisar el script del compañero al cerrar la primera versión de Seguimiento EVAPLAN.
 - Lint de CI limitado a errores reales; ampliar al ordenar el código.
 

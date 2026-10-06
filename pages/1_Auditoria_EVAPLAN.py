@@ -22,7 +22,7 @@ from src.evaplan.prompts import PERIODOS
 from src.evaplan.recordatorios import recordatorios_cierre
 from src.evaplan.version import version_codigo
 
-st.set_page_config(page_title="Seguimiento EVAPLAN", page_icon="📊", layout="wide")
+st.set_page_config(page_title="Seguimiento EVAPLAN", layout="wide")
 estilos.aplicar_estilos()
 
 
@@ -43,7 +43,7 @@ def _descargar_drive(url: str) -> bytes:
 
 
 # ------------------------------------------------------------------ barra lateral (solo lo esencial)
-st.sidebar.markdown("### Revisión")
+st.sidebar.markdown("### Configuración de la revisión")
 periodo = st.sidebar.selectbox(
     "Periodo de revisión", PERIODOS,
     help="Ajusta el texto del prompt. En los periodos de cierre aparecen además los recordatorios de certificados.")
@@ -64,18 +64,19 @@ url_drive = _url_drive()
 res = st.session_state.get("resultado")
 
 # ------------------------------------------------------------------ encabezado
-estilos.encabezado(
-    "Seguimiento EVAPLAN",
-    "Cruza lo que reportó una dependencia en EVAPLAN con el Plan Indicativo y su Plan de Acción, y deja listos los "
-    "hechos para el análisis. No emite semáforos: el juicio es de quien revisa.",
-    entidad=res.entidad if res is not None else "")
 if res is None:
+    estilos.encabezado(
+        "Seguimiento EVAPLAN",
+        "Cruza lo que reportó una dependencia en EVAPLAN con el Plan Indicativo y su Plan de Acción, y deja listos "
+        "los hechos para el análisis. No emite semáforos: el juicio es de quien revisa.")
     estilos.pasos([("Descarga de EVAPLAN", "Dos archivos de la dependencia: Plan Indicativo MP y Plan de Acción."),
                    ("Cárgalos y procesa", "El Plan Indicativo de Drive se lee solo si está configurado."),
-                   ("Revisa y descarga", "Metas con alertas primero, Excel, PDF y prompt para la IA.")])
+                   ("Revisa y descarga", "Metas con alertas primero; Excel, PDF y prompt para la IA.")])
+else:
+    vista.encabezado_resultados(res, periodo)
 
 # ------------------------------------------------------------------ carga de archivos
-with st.expander("📁 Archivos de la dependencia", expanded=res is None):
+with st.expander("Archivos de la dependencia", expanded=res is None, icon=":material/upload_file:"):
     c1, c2 = st.columns(2)
     f_pi = c1.file_uploader("Plan Indicativo MP", type=["xlsx"], key="up_pi",
                             help="'Informe de Plan Indicativo MP.xlsx', descargado de EVAPLAN")
@@ -91,10 +92,9 @@ with st.expander("📁 Archivos de la dependencia", expanded=res is None):
                                     "pública: se usa solo en esta sesión y no se guarda.")
     listo = bool(f_pi and f_ce)
     b1, b2 = st.columns([1, 3], vertical_alignment="center")
-    procesar = b1.button("Procesar", type="primary", disabled=not listo, use_container_width=True)
-    b2.caption(("✅ Plan Indicativo de Drive conectado por enlace" if url_drive else
-                "⚠️ Sin enlace al Plan Indicativo de Drive: no se detectarán las metas sin reporte")
-               + ("" if listo else " · Sube los dos archivos de EVAPLAN para continuar"))
+    procesar = b1.button("Procesar", type="primary", disabled=not listo, width="stretch", icon=":material/play_arrow:")
+    b2.markdown(f'<div class="nota">{"Plan Indicativo de Drive conectado por enlace." if url_drive else "Sin enlace al Plan Indicativo de Drive: no se detectarán las metas sin reporte."}'
+                f'{"" if listo else " Sube los dos archivos de EVAPLAN para continuar."}</div>', unsafe_allow_html=True)
 
 if procesar:
     try:
@@ -131,7 +131,7 @@ if res.usa_z023 and not res.z023_equivalencias:
 
 recordatorios = recordatorios_cierre(periodo, res.matriz, res.es_descentralizada, res.aportes if res.usa_z023 else None)
 vista.barra_acciones(res, periodo, con_hechos, recordatorios)
-vista.recordatorios_cierre(recordatorios)
 vista.cifras(res)
+vista.recordatorios_cierre(recordatorios)
 vista.lista_y_ficha(res)
 vista.detalle_tecnico(res)

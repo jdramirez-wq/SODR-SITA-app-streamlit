@@ -14,6 +14,7 @@ import re
 import pandas as pd
 
 from . import aportes as A
+from . import formato as F
 from .esquemas import FOCALIZACION
 from .validaciones import ANIOS, COLUMNAS_HALLAZGO, inferir_vigencia
 
@@ -38,6 +39,10 @@ COLUMNAS_MATRIZ = [
     "n_alertas", "alertas",
 ]
 
+# Columnas que internamente son fracciones (0-1). Al exportar se escriben en escala 0-100 (ver reportes.py).
+COLUMNAS_PORCENTAJE = ("pct_proyectado_vs_meta", "pct_avance_vigencia", "pct_avance_pg", "pct_ejecucion_financiera",
+                       "avance_actividades", "avance_actividades_con_obligaciones", "brecha_meta_vs_actividades")
+
 COLUMNAS_Z023 = ["n_proyectos_z023", "n_entidades_aportantes", "n_proyectos_ajenos", "valor_z023",
                  "aportes_otras_entidades"]
 
@@ -50,17 +55,17 @@ ETIQUETAS = {
     "periodicidad": "Periodicidad", "estado_reporte": "Estado del reporte", "vigencia": "Vigencia",
     "pg": "PG cuatrienio", "meta_vigencia": "Meta vigencia", "meta_vigencia_export": "Meta vigencia según el export de EVAPLAN", "meta_vigencia_np": "Vigencia no programada (NP)",
     "logro_previo": "Logro vigencias cerradas", "resultado": "Resultado (último acumulado)",
-    "valor_proyectado": "Valor proyectado (cierre)", "pct_proyectado_vs_meta": "% proyectado vs meta vigencia", "pct_avance_vigencia": "% avance vs meta vigencia",
-    "avance_cuatrienio": "Avance cuatrienio", "pct_avance_pg": "% avance vs PG",
+    "valor_proyectado": "Valor proyectado (cierre)", "pct_proyectado_vs_meta": "Proyección vs meta de la vigencia (%)", "pct_avance_vigencia": "Avance vs meta de la vigencia (%)",
+    "avance_cuatrienio": "Avance cuatrienio", "pct_avance_pg": "Avance vs PG (%)",
     "tiene_plan_de_accion": "Tiene plan de acción", "n_proyectos": "N.º proyectos", "proyectos": "Proyectos asociados",
     "n_registros": "N.º registros presupuestales", "ppto_definitivo": "Ppto. definitivo", "ppto_obligaciones": "Obligaciones",
-    "ppto_disponible": "Disponible", "pct_ejecucion_financiera": "% ejecución financiera",
-    "avance_actividades": "Avance promedio de TODAS las actividades (0-1) · PRIMA para el análisis",
-    "avance_actividades_con_obligaciones": "Avance promedio solo de actividades con obligaciones (0-1) · complementario",
+    "ppto_disponible": "Disponible", "pct_ejecucion_financiera": "Ejecución financiera (%)",
+    "avance_actividades": "Avance promedio de TODAS las actividades (%) · PRIMA para el análisis",
+    "avance_actividades_con_obligaciones": "Avance promedio solo de actividades con obligaciones (%) · complementario",
     "n_registros_con_obligaciones": "N.º registros con obligaciones", "avance_por_proyecto": "Avance actividades por proyecto",
     "n_registros_con_obligaciones_sin_avance": "Registros con obligaciones y sin avance físico",
     "n_registros_sin_avance_sin_observacion": "…de ellos, sin observación que lo explique",
-    "brecha_meta_vs_actividades": "Brecha meta vs actividades", "focalizacion": "Focalización",
+    "brecha_meta_vs_actividades": "Brecha avance de la meta menos avance de actividades (puntos %)", "focalizacion": "Focalización",
     "principal_logro": "Principal logro", "analisis_logro": "Análisis del logro",
     "dificultades_gestiones": "Dificultades o gestiones", "menciona_gestion": "Menciona gestión/donación/cofinanciación",
     "n_alertas": "N.º alertas", "alertas": "Alertas",
@@ -75,7 +80,7 @@ def _focalizacion(r) -> object:
     for canon, origen in FOCALIZACION:
         v = r[canon] if canon in r.index else pd.NA
         if not _na(v) and float(v) != 0:
-            partes.append(f"{origen}: {float(v):g}")
+            partes.append(f"{origen}: {F.numero(v)}")
     if "foc_otro_cual" in r.index and not _na(r["foc_otro_cual"]):
         partes.append(f"¿Cuál Otro?: {r['foc_otro_cual']}")
     return " | ".join(partes) if partes else "No reporta focalización."
@@ -118,7 +123,7 @@ def _consolidar_plan_de_accion(ce: pd.DataFrame) -> pd.DataFrame:
             "avance_actividades_con_obligaciones": (avance[con_obligaciones].mean() / 100
                                                     if con_obligaciones.any() else pd.NA),
             "n_registros_con_obligaciones": int(con_obligaciones.sum()),
-            "avance_por_proyecto": " | ".join(f"{p}: {v:.1f} %" for p, v in por_proyecto.items() if not _na(v)),
+            "avance_por_proyecto": " | ".join(f"{p}: {F.porcentaje_100(v)}" for p, v in por_proyecto.items() if not _na(v)),
             "n_registros_con_obligaciones_sin_avance": len(sin_avance),
             "n_registros_sin_avance_sin_observacion": int(sin_avance["observacion"].isna().sum()),
         })
@@ -225,8 +230,9 @@ def construir_matriz(pi_mp: pd.DataFrame, centralizadas: pd.DataFrame, drive_mp:
     h = detectar_hallazgos(m, criterio_flexible)
     if len(h):
         # El texto lista primero lo que requiere revisión y después lo informativo; el contador solo cuenta lo primero.
-        h = h.assign(_txt=h.apply(lambda r: r["detalle"] if r["severidad"] != "info" else f"ℹ️ {r['detalle']}", axis=1))
-        por_mp = h.groupby("llave")["_txt"].agg(" · ".join)
+        h = h.assign(_txt=h.apply(lambda r: f"[Revisar] {r['detalle']}" if r["severidad"] != "info"
+                                  else f"[Informativa] {r['detalle']}", axis=1))
+        por_mp = h.groupby("llave")["_txt"].agg(" | ".join)
         n_rev = h[h["severidad"] != "info"].groupby("llave").size()
     else:
         por_mp, n_rev = pd.Series(dtype=str), pd.Series(dtype=int)
@@ -269,14 +275,14 @@ def detectar_hallazgos(m: pd.DataFrame, criterio_flexible: bool = False) -> pd.D
         me, mv = f["meta_vigencia_export"], f["meta_vigencia"]
         if not _na(me) and not _na(mv) and abs(me - mv) > 1e-6 * max(1.0, abs(me), abs(mv)):
             add("meta_vigencia_difiere_del_export", "advertencia", f,
-                f"La meta {f['vigencia']} en el export de EVAPLAN ({me:g}) difiere de la del Plan Indicativo de Drive "
-                f"({mv:g}); prevalece Drive (el operador de EVAPLAN a veces no lo tiene actualizado)")
+                f"La meta {f['vigencia']} en el export de EVAPLAN ({F.numero(me)}) difiere de la del Plan Indicativo de Drive "
+                f"({F.numero(mv)}); prevalece Drive (el operador de EVAPLAN a veces no lo tiene actualizado)")
         if _na(res):
             add("resultado_vacio", "advertencia", f, "Reporta la meta pero el campo Resultado está vacío")
             continue
         if res > 0 and (f["meta_vigencia_np"] or _na(f["meta_vigencia"]) or f["meta_vigencia"] <= 0):
             add("reporte_sin_meta_programada", "advertencia", f,
-                f"Reporta avance ({res:g}) pero la vigencia {f['vigencia']} no tiene meta programada")
+                f"Reporta avance ({F.numero(res)}) pero la vigencia {f['vigencia']} no tiene meta programada")
         if not f["tiene_plan_de_accion"]:
             add("sin_plan_de_accion", "info", f,
                 "La meta no tiene actividades en Centralizadas de esta dependencia (puede ejecutarla un proyecto de otra "
@@ -316,13 +322,13 @@ def detectar_hallazgos(m: pd.DataFrame, criterio_flexible: bool = False) -> pd.D
         proy = f["valor_proyectado"]
         if not _na(proy) and not _na(f["meta_vigencia"]) and not f["meta_vigencia_np"] and proy < f["meta_vigencia"]:
             add("proyeccion_bajo_meta", "advertencia", f,
-                f"La dependencia proyecta cerrar en {proy:g}, por debajo de la meta de la vigencia ({f['meta_vigencia']:g})")
+                f"La dependencia proyecta cerrar en {F.numero(proy)}, por debajo de la meta de la vigencia ({F.numero(f['meta_vigencia'])})")
         if not _na(proy) and proy < res and f["comportamiento"] in COMPORTAMIENTOS_ACUMULATIVOS:
             add("proyeccion_menor_que_resultado", "advertencia", f,
-                f"La proyección de cierre ({proy:g}) es menor que el resultado ya acumulado ({res:g})")
+                f"La proyección de cierre ({F.numero(proy)}) es menor que el resultado ya acumulado ({F.numero(res)})")
         if not _na(f["pct_avance_vigencia"]) and f["pct_avance_vigencia"] > 1:
             add("resultado_supera_meta_vigencia", "info", f,
-                f"El resultado ({res:g}) supera la meta de la vigencia ({f['meta_vigencia']:g})")
+                f"El resultado ({F.numero(res)}) supera la meta de la vigencia ({F.numero(f['meta_vigencia'])})")
     h = pd.DataFrame(out, columns=COLUMNAS_HALLAZGO)
     orden = {"error": 0, "advertencia": 1, "info": 2}
     return h.sort_values("severidad", key=lambda s: s.map(orden), kind="stable").reset_index(drop=True)

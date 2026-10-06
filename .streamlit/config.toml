@@ -3,7 +3,9 @@ primaryColor = "#0F766E"
 backgroundColor = "#FFFFFF"
 secondaryBackgroundColor = "#F1F5F4"
 textColor = "#14302C"
-font = "sans serif"
+font = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+headingFont = "Inter:https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+baseRadius = "medium"
 
 [client]
 toolbarMode = "minimal"

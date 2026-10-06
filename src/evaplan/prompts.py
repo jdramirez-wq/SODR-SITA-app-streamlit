@@ -23,6 +23,7 @@ y verificadas por código: úsalas tal cual y no las recalcules. La columna "Ale
 objetivas (por ejemplo: avance sin obligaciones, meta sin reporte); no es un dictamen. Las metas con estado
 "Sin reporte en EVAPLAN" no tienen narrativa: repórtalas como omisión de reporte, no las evalúes.
 Sobre el avance de las actividades hay DOS promedios y no son lo mismo: "Avance promedio de TODAS las actividades" (todos los registros de la meta, incluidos los que no tienen obligaciones) y "Avance promedio solo de actividades con obligaciones". El que PRIMA para tu análisis (por ejemplo, en la Alerta Tipo 3) es el de TODAS las actividades; el otro es complementario. Si ambos difieren de forma notable, señálalo: significa que hay actividades sin obligaciones que bajan o suben el promedio. Si ninguna actividad tiene obligaciones, el segundo promedio no existe ("sin dato"): no lo trates como 0.
+Para cada meta, el PDF trae la sección "CONDICIONES DE LAS ALERTAS TIPO 1, 2 Y 3 DEL PROMPT": indica, con las cifras, si se cumple la condición objetiva de cada alerta. Usa ese resultado tal cual: no llames Tipo 1, 2 o 3 a una situación que no cumple su condición. Lo que sí debes juzgar es si la narrativa (Logro, Análisis, Dificultades) explica la situación.
 Tu aporte es el JUICIO: coherencia narrativa, suficiencia del reporte, gravedad de las alertas y retroalimentación.
 """
 
@@ -59,8 +60,15 @@ Trabajo en la SODR. Mi función es auditar el avance del plan de desarrollo. Par
 Meta Programada (PI): Lo que se debía hacer en la vigencia.
 Resultado Reportado: Lo que la entidad reporta como avance a la fecha de corte.
 Ejecución Financiera (PA): Recursos obligados de los proyectos de inversión asociados.
-Avance Actividades (PA): Promedio de ejecución física de las actividades que componen el proyecto. El valor presentado es decimal, es decir, ejemplo: 0.2 =20%
+Avance Actividades (PA): Promedio de ejecución física de las actividades que componen el proyecto. Se presenta en porcentaje (ejemplo: 20,0 %).
 Narrativa: Textos cualitativos (Principal Logro, Análisis del Logro, Dificultades).
+
+CÓMO LEER LAS CIFRAS DE LOS ARCHIVOS (convención única del PDF y del Excel)
+- Todos los porcentajes ya vienen calculados, en escala de 0 a 100 y con el símbolo % (ejemplo: 22,3 %). No los recalcules ni los multipliques por 100.
+- Los valores en pesos llevan el signo $ y punto de miles, sin decimales (ejemplo: $ 3.884.965.483).
+- En las cantidades el punto separa miles y la coma separa decimales (12.000 = doce mil; 41,5 = cuarenta y uno coma cinco).
+- "sin dato" significa que no hay información: no es cero.
+- En tu respuesta escribe los porcentajes igual: con el símbolo % (ejemplo: 22,3 %).
 """
 
     reglas_oro = """

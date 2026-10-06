@@ -1,3 +1,4 @@
 -r requirements.txt
 ruff
 pytest
+pypdf        # solo pruebas: leer el texto del PDF como lo haría una IA

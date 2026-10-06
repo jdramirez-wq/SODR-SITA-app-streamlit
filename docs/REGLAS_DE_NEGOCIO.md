@@ -37,6 +37,18 @@ Las reglas Z1-Z3 solo revisan las filas de las dependencias cargadas (el Z023 tr
 revisa: la presencia de aportes ajenos **no excusa** el aviso de "sin actividades" o "avance sin obligaciones" (quien
 reporta debe conocer ese avance).
 
+## Condiciones de las Alertas Tipo 1, 2 y 3 del prompt (PDF y ficha de la meta)
+Prueba con un modelo de IA sencillo (6-oct): con los mismos datos confundía los tipos de alerta. La herramienta ahora
+comprueba **solo la parte numérica** de cada alerta, con los umbrales que trae el propio prompt, y lo dice por meta
+("se cumple / no se cumple / no se puede comprobar"). Si la narrativa lo explica y el dictamen siguen siendo juicio.
+Función: `condiciones.condiciones_prompt`.
+
+| Tipo | Condición numérica comprobada |
+|---|---|
+| 1 | Resultado de la meta > 0 y obligaciones = $ 0 (se informa si la narrativa menciona gestión/donación/cofinanciación/sin costo) |
+| 2 | Resultado = 0 y ejecución financiera > 30 % (se informa si Dificultades está vacío y cuántas actividades tienen obligaciones sin avance) |
+| 3 | Avance frente a la meta ≥ 100 % y avance de actividades < 30 % (en total o en algún proyecto); se dice si la meta va por encima o por debajo de las actividades |
+
 ## Recordatorios de cierre de vigencia
 No son hallazgos: son **pendientes de quien revisa** (certificados que el sistema no trae). Solo aparecen cuando el
 periodo de revisión elegido es de cierre (*Revisión Acumulada y Proyectada a Cierre de Vigencia* o *Revisión a Cierre de

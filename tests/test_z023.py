@@ -85,7 +85,7 @@ def test_hallazgos_de_z023_son_informativos(res):
     assert (h["regla"] == "meta_con_aportes_de_otras_entidades").sum() == 1
     assert set(h.loc[h["regla"] == "meta_sin_proyectos_en_z023", "llave"]) == {"MP9900202019902001", "MP9900202039902003"}
     # lo informativo no suma a "con alertas": la meta compartida no tiene alertas por esto
-    assert res.matriz.set_index("codigo_mp").loc[MP_COMPARTIDA, "alertas"].count("ℹ️") >= 1
+    assert res.matriz.set_index("codigo_mp").loc[MP_COMPARTIDA, "alertas"].count("[Informativa]") >= 1
 
 
 def test_actividad_de_centralizadas_ausente_del_z023(res):
