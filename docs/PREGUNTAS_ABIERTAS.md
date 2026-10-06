@@ -37,6 +37,12 @@ Cuando se resuelva una, se mueve a [REGLAS_DE_NEGOCIO.md](REGLAS_DE_NEGOCIO.md) 
    *Para confirmar:* en el `.xlsx` original, ¿las columnas calculadas (Centro Gestor de la MP, código de producto DNP,
    llaves DNP) traen valores o también quedan vacías?
 
+4b. ~~**Descentralizadas:** ¿misma estructura?~~ **Resuelto (6-oct):** sí (ejemplo INDERVALLE), con las diferencias de
+   código y de Plan de Acción descritas en `docs/FUENTES_DE_DATOS.md`.
+4c. **Certificados de cierre:** la app ya recuerda solicitarlos (reglas K1-K3 en `docs/REGLAS_DE_NEGOCIO.md`). Falta el
+   detalle: ¿qué certificados exactos, quién los firma y en qué fecha se piden? Con eso se puede ajustar el texto del
+   recordatorio y, si se quiere, recibirlos como una fuente más.
+
 ## Decisiones de producto
 5. **Prompt:** el bloque opcional "Hechos verificados" queda **activado por defecto** (se puede desmarcar en la barra
    lateral). Se revisa cuando el equipo compare respuestas del LLM con y sin el bloque.

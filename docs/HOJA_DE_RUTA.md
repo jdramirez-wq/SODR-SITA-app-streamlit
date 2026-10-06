@@ -22,6 +22,10 @@ Estructura, `CLAUDE.md`, README, CI, plantillas, reglas de privacidad.
 - [x] Probada en navegador real con 10 dependencias reales; cifras verificadas de forma independiente (ver análisis 2b)
 - [x] **Z023 consolidado** subido por sesión (cuarto cuadro opcional; nunca guardado): proyectos que aportan a cada meta
       (propios y de otras entidades), validaciones y hoja `Aportes_Z023` en el Excel
+- [x] Entidades descentralizadas (ejemplo INDERVALLE): equivalencia de código con el Z023, actividades por código PPM
+- [x] Recordatorios de cierre de vigencia (certificados financieros de descentralizadas y de avance por gestión) en la
+      página y en el prompt
+- [ ] Detallar con el equipo los certificados de cierre (ver pregunta 4c)
 - [ ] Probar el cuarto cuadro con el Z023 real (`.xlsx` original con fórmulas calculadas) y revisar tiempos de lectura
 - [ ] Leer el código de producto DNP (`BPIN + Producto MGA`) del Z023 cuando se confirme que llega con valores
 - [x] Avance por registro (no hay forma sencilla de agrupar por actividad)

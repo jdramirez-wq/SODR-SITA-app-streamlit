@@ -37,6 +37,18 @@ Las reglas Z1-Z3 solo revisan las filas de las dependencias cargadas (el Z023 tr
 revisa: la presencia de aportes ajenos **no excusa** el aviso de "sin actividades" o "avance sin obligaciones" (quien
 reporta debe conocer ese avance).
 
+## Recordatorios de cierre de vigencia
+No son hallazgos: son **pendientes de quien revisa** (certificados que el sistema no trae). Solo aparecen cuando el
+periodo de revisión elegido es de cierre (*Revisión Acumulada y Proyectada a Cierre de Vigencia* o *Revisión a Cierre de
+Vigencia*). Se muestran en la página y se agregan al prompt para que el LLM los repita como advertencia al final de su
+informe. Función: `recordatorios.recordatorios_cierre`. El detalle de los certificados está **por definir con el equipo**.
+
+| Id | Cuándo aparece | Qué recuerda |
+|---|---|---|
+| K1 | La entidad del export es descentralizada (su código en el Z023 empieza por `00`; sin Z023, sus actividades no tienen código PS) | Solicitar su certificado financiero: ella misma registra su información financiera, no viene de SAP |
+| K2 | Con el Z023 cargado, alguna meta recibe aportes de entidades descentralizadas | Solicitar el certificado financiero a cada una, con la lista de metas |
+| K3 | Cualquier entidad (central o descentralizada) con metas reportadas con avance cuya narrativa menciona gestión, donación, cofinanciación o sin costo | Solicitar el certificado o soporte del avance declarado por gestión, con la lista de metas |
+
 ## Indicadores
 | Id | Regla | Estado | Severidad | Función |
 |---|---|---|---|---|

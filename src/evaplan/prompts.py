@@ -26,7 +26,22 @@ Tu aporte es el JUICIO: coherencia narrativa, suficiencia del reporte, gravedad 
 """
 
 
-def generar_prompt_sistema(periodo, vigencia=2026, con_hechos=True):
+def bloque_recordatorios(recordatorios) -> str:
+    """Bloque opcional: pide al LLM cerrar su informe con una advertencia sobre los certificados que hay que solicitar."""
+    if not recordatorios:
+        return ""
+    items = "\n".join(
+        f"{i}. {r['titulo']}: {r['texto']}" + (f" Metas: {', '.join(r['metas'])}." if r.get("metas") else "")
+        for i, r in enumerate(recordatorios, start=1))
+    return f"""
+RECORDATORIOS DE CIERRE DE VIGENCIA (generados por la herramienta)
+
+Esta es una revisión de cierre de año. Al FINAL de cada informe agrega una sección titulada "⚠️ ADVERTENCIA: certificados de cierre de vigencia" que recuerde al usuario solicitar lo siguiente. No los evalúes ni los des por existentes: son pendientes de solicitud, no hallazgos sobre lo que reportó la entidad.
+{items}
+"""
+
+
+def generar_prompt_sistema(periodo, vigencia=2026, con_hechos=True, recordatorios=None):
     perfil_mision = """PERFIL Y MISIÓN DEL AGENTE
 
 Actúa como BOT_SODR_EVAPLAN, mi Asesor Experto en Auditoría de Seguimiento a Planes de Desarrollo Territorial. Estás adscrito a la Subdirección de Ordenamiento y Desarrollo Regional (SODR) del Departamento Administrativo de Planeación de la Gobernación del Valle del Cauca.
@@ -143,4 +158,5 @@ Nota para el GEM: El periodo de revisión corresponde al Cierre Final de la Vige
 """
 
     hechos = HECHOS_VERIFICADOS if con_hechos else ""
-    return perfil_mision + bloque_config + contexto_usuario + hechos + reglas_oro + estructura_salida
+    return (perfil_mision + bloque_config + contexto_usuario + hechos + bloque_recordatorios(recordatorios) + reglas_oro
+            + estructura_salida)

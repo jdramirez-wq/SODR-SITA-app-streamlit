@@ -128,6 +128,7 @@ Actividades de proyectos de inversión de UNA entidad, con presupuesto y avance 
 - **Lector:** `leer_centralizadas()`
 
 > Fila 1 es un título ('EvaPlan'); los encabezados están en la fila 2.
+> Las entidades descentralizadas descargan 'Descentralizadas.xlsx' con LA MISMA estructura. Diferencias: el código de proyecto es el de PPM ('PI-102710'), la actividad lleva código PPM y el Plan de Acción incluye también proyectos de OTRAS dependencias que aportan a sus metas.
 > Cada fila es un REGISTRO presupuestal (llave: `ID`), no una actividad: la misma actividad aparece en varias filas cuando tiene varios registros. Los presupuestos se suman; el avance se promedia por registro.
 > Solo trae los proyectos de los que la dependencia es centro gestor (módulo PA): pueden aportar a metas coordinadas por OTRA dependencia, y las metas propias pueden recibir aportes de proyectos ajenos.
 
@@ -145,7 +146,7 @@ Actividades de proyectos de inversión de UNA entidad, con presupuesto y avance 
 | 10 | `Producto MGA` | `producto_mga` | texto | no | Nombre del producto MGA. |  |
 | 11 | `Cod.Indicador Producto MGA` | `codigo_indicador_producto_mga` | codigo | no | Indicador de producto MGA (9 dígitos). | Normalmente producto + '00', no siempre. |
 | 12 | `Indicador Producto MGA` | `indicador_producto_mga` | texto | no | Nombre del indicador de producto. |  |
-| 13 | `Cód. Actividad` | `codigo_actividad` | codigo | no | Código de la actividad: '<proyecto>/a/b/cc/dd' (5 partes separadas por '/'). | Empieza siempre por el código del proyecto. NO es único: una actividad puede tener varios registros (distinto ID, presupuesto y, a veces, estado, avance y observación). |
+| 13 | `Cód. Actividad` | `codigo_actividad` | codigo | no | Código de la actividad: '<proyecto>/a/b/cc/dd' (5 partes separadas por '/'). | Empieza por el código del proyecto. NO es único: una actividad puede tener varios registros (distinto ID, presupuesto y, a veces, estado, avance y observación). En las entidades DESCENTRALIZADAS (sin código PS) es el código PPM numérico ('00000000000000049904'), sin '/'. |
 | 14 | `Nombre Actividad` | `nombre_actividad` | texto | no | Nombre de la actividad. |  |
 | 15 | `Cód. Fondo` | `codigo_fondo` | codigo | no | Código de la fuente de financiación. |  |
 | 16 | `Nombre Fondo` | `nombre_fondo` | texto | no | Nombre de la fuente de financiación. |  |

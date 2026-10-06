@@ -26,8 +26,8 @@ pages/2_POAI_2027.py         (CONGELADA por ahora) Control previo de proyectos: 
                              cruce con PI desde Drive (hoja "MP"), auditoría Z023, prompt IA
 src/evaplan/                 Contrato de datos (SIN Streamlit): esquemas.py (diccionario), limpieza.py,
                              lectura.py (lectores tipados), validaciones.py (reglas y cruces), seguimiento.py
-                             (matriz por meta), aportes.py (proyectos por meta desde el Z023), reportes.py (Excel/PDF),
-                             prompts.py, pipeline.py (orquestador)
+                             (matriz por meta), aportes.py (proyectos por meta desde el Z023), recordatorios.py (cierre de año),
+                             reportes.py (Excel/PDF), prompts.py, pipeline.py (orquestador)
 scripts/                     generar_diccionario.py (docs desde esquemas), generar_ejemplos.py (datos ficticios)
 tests/                       pytest sobre los ejemplos ficticios de data/ejemplos/
 data/                        Solo ejemplos ficticios (ver data/README.md)
@@ -79,6 +79,11 @@ python scripts/generar_ejemplos.py      # regenera los archivos ficticios
 - **Z023 consolidado:** cuarto cuadro opcional (`leer_z023`, hoja `Hoja1`, `.xlsx`/`.xlsm`). Muestra por meta los proyectos que
   le aportan (propios y de otras entidades, incluidas descentralizadas `00xx`, que no tienen código PS). Llave de la fila =
   `ppm_actividad`; `ps_actividad` = `Cód. Actividad` de Centralizadas. Los errores de fórmula (`#ERROR!`) son vacío.
+- **Descentralizadas:** misma estructura de archivos que las centrales, pero su código de entidad difiere entre EVAPLAN (1216)
+  y el Z023 (0006): se enlazan por nombre (`aportes.equivalencias_z023`). Su actividad es el código PPM (sin `/`) y su Plan de
+  Acción incluye proyectos de otras dependencias. Lo propio/ajeno se decide por el código en el Z023.
+- **Recordatorios de cierre** (`recordatorios.py`): solo en periodos de cierre. Certificado financiero de descentralizadas y
+  certificado del avance por gestión (todas). No son hallazgos: van a la página y al prompt como advertencia.
 - **Información no pública:** no guardar el Z023 consolidado ni datos similares en el repo ni en carpetas de lectura
   abierta; se subirían por sesión (`st.file_uploader`) y solo se usan en memoria.
 - El indicador "con alertas" cuenta solo advertencias y errores; lo informativo no suma.

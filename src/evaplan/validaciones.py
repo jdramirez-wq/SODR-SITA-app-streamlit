@@ -13,6 +13,8 @@ import math
 
 import pandas as pd
 
+from .aportes import entidades_de, equivalencias_z023
+
 COLUMNAS_HALLAZGO = ["regla", "severidad", "fuente", "llave", "fila_excel", "detalle"]
 ANIOS = (2024, 2025, 2026, 2027)
 TOLERANCIA = 1e-6
@@ -232,6 +234,8 @@ def integridad_centralizadas(ce: pd.DataFrame) -> pd.DataFrame:
             h.append(_h("proyecto_con_varios_bpin", "error", "centralizadas", proyecto,
                         f"BPIN distintos: {sorted(g['bpin'].dropna().unique())}"))
     for _, r in ce.iterrows():
+        if "/" not in str(r["codigo_actividad"]):
+            continue          # entidades descentralizadas: la actividad se identifica con el código PPM (sin '/')
         if not str(r["codigo_actividad"]).startswith(str(r["codigo_proyecto"]) + "/"):
             h.append(_h("actividad_fuera_de_proyecto", "error", "centralizadas", r["codigo_actividad"],
                         f"no empieza por el proyecto {r['codigo_proyecto']}", r["fila_excel"]))
@@ -295,7 +299,9 @@ def z023_calidad(z: pd.DataFrame) -> pd.DataFrame:
         h.append(_h("z023_mp_formato", "advertencia", "z023", r["codigo_mp"],
                     f"No cumple MP+5+2+2+7 dígitos (actividad {r['ppm_actividad']})", r["fila_excel"]))
     # BPIN válido: empieza por 2 y tiene 12 a 16 caracteres (criterio de la macro del consolidado). Una alerta por proyecto.
-    malos = z[~z["bpin"].fillna("").map(lambda b: b.startswith("2") and 12 <= len(b) <= 16)]
+    if z.empty:
+        return _como_df(h)
+    malos = z[~z["bpin"].fillna("").map(lambda b: b.startswith("2") and 12 <= len(b) <= 16).astype(bool)]
     for proy, g in malos.groupby("proyecto_ppm"):
         bpin = g["bpin"].dropna().iloc[0] if g["bpin"].notna().any() else "vacío"
         h.append(_h("z023_bpin_no_valido", "advertencia", "z023", proy,
@@ -304,8 +310,15 @@ def z023_calidad(z: pd.DataFrame) -> pd.DataFrame:
 
 
 def centralizadas_vs_z023(centralizadas: pd.DataFrame, z: pd.DataFrame) -> pd.DataFrame:
-    """Cada actividad de Centralizadas debe existir en el Z023 (mismo código PS) y apuntar a la misma meta."""
-    mp_por_actividad = {act: set(g["codigo_mp"].dropna()) for act, g in z[z["ps_actividad"].notna()].groupby("ps_actividad")}
+    """Cada actividad de Centralizadas debe existir en el Z023 y apuntar a la misma meta.
+
+    Dependencias centrales: el código es el PS (`ps_actividad`). Entidades descentralizadas: no tienen código PS y su
+    actividad se identifica con el código PPM (`ppm_actividad`); se acepta cualquiera de los dos.
+    """
+    mp_por_actividad = {}
+    for col in ("ps_actividad", "ppm_actividad"):
+        for act, g in z[z[col].notna()].groupby(col):
+            mp_por_actividad.setdefault(act, set()).update(g["codigo_mp"].dropna())
     h = []
     for act, g in centralizadas.groupby("codigo_actividad"):
         if act not in mp_por_actividad:
@@ -360,14 +373,16 @@ def validar_todo(pi_mp_evaplan: pd.DataFrame | None = None, pi_mr_evaplan: pd.Da
             r += [cobertura_evaplan_vs_drive(pi_mp_evaplan, drive_mp),
                   valores_evaplan_vs_drive(pi_mp_evaplan, drive_mp)]
         if centralizadas is not None:
-            r.append(presupuesto_vs_recursos_pi(centralizadas, drive_mp))
+            r.append(presupuesto_vs_recursos_pi(centralizadas, drive_mp, anio=vigencia or 2026))
     if z023 is not None:
         # Igual que Drive: el Z023 trae TODAS las entidades; se revisan las de los archivos cargados (si los hay).
         entidades = set()
         for df in (pi_mp_evaplan, centralizadas):
             if df is not None and "codigo_entidad" in df.columns:
                 entidades |= set(df["codigo_entidad"].dropna())
-        propio = z023[z023["dependencia"].isin(entidades)] if entidades else z023
+        # Las descentralizadas tienen otro código en el Z023 (ver aportes.equivalencias_z023).
+        equivalentes = set(equivalencias_z023(entidades_de(pi_mp_evaplan, centralizadas), z023).values())
+        propio = z023[z023["dependencia"].isin(entidades | equivalentes)] if entidades else z023
         r.append(z023_calidad(propio))
         if centralizadas is not None:
             r.append(centralizadas_vs_z023(centralizadas, z023))

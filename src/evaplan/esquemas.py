@@ -249,8 +249,9 @@ CENTRALIZADAS = Esquema(
         Campo("indicador_producto_mga", "Indicador Producto MGA", "texto", "Nombre del indicador de producto."),
         Campo("codigo_actividad", "Cód. Actividad", "codigo",
               "Código de la actividad: '<proyecto>/a/b/cc/dd' (5 partes separadas por '/').",
-              notas="Empieza siempre por el código del proyecto. NO es único: una actividad puede tener varios "
-                    "registros (distinto ID, presupuesto y, a veces, estado, avance y observación)."),
+              notas="Empieza por el código del proyecto. NO es único: una actividad puede tener varios "
+                    "registros (distinto ID, presupuesto y, a veces, estado, avance y observación). En las entidades "
+                    "DESCENTRALIZADAS (sin código PS) es el código PPM numérico ('00000000000000049904'), sin '/'."),
         Campo("nombre_actividad", "Nombre Actividad", "texto", "Nombre de la actividad."),
         Campo("codigo_fondo", "Cód. Fondo", "codigo", "Código de la fuente de financiación."),
         Campo("nombre_fondo", "Nombre Fondo", "texto", "Nombre de la fuente de financiación."),
@@ -280,6 +281,9 @@ CENTRALIZADAS = Esquema(
         Campo("estado_registro", "Estado", "texto", "Estado del registro (ACTIVO)."),
     ),
     notas=("Fila 1 es un título ('EvaPlan'); los encabezados están en la fila 2.",
+           "Las entidades descentralizadas descargan 'Descentralizadas.xlsx' con LA MISMA estructura. Diferencias: el "
+           "código de proyecto es el de PPM ('PI-102710'), la actividad lleva código PPM y el Plan de Acción incluye "
+           "también proyectos de OTRAS dependencias que aportan a sus metas.",
            "Cada fila es un REGISTRO presupuestal (llave: `ID`), no una actividad: la misma actividad aparece en "
            "varias filas cuando tiene varios registros. Los presupuestos se suman; el avance se promedia por registro.",
            "Solo trae los proyectos de los que la dependencia es centro gestor (módulo PA): pueden aportar a metas "

@@ -8,7 +8,11 @@ El Z023 es información no pública: estas funciones solo trabajan en memoria co
 """
 from __future__ import annotations
 
+import re
+
 import pandas as pd
+
+from . import limpieza as lz
 
 COLUMNAS_APORTES = [
     "codigo_mp", "vigencia", "codigo_dependencia", "nombre_dependencia", "tipo_entidad", "es_propia",
@@ -32,12 +36,55 @@ def tipo_entidad(codigo) -> str:
     return "Descentralizada" if isinstance(codigo, str) and codigo.startswith(PREFIJO_DESCENTRALIZADA) else "Dependencia"
 
 
-def construir_aportes(z023: pd.DataFrame, matriz: pd.DataFrame, vigencia: int) -> pd.DataFrame:
-    """Una fila por meta × dependencia × proyecto, solo para las metas de `matriz` y la `vigencia` dada."""
+def _palabras(nombre) -> set[str]:
+    """Palabras distintivas (5+ letras, sin tildes, en mayúsculas) de un nombre de entidad."""
+    return set(re.findall(r"[A-Z0-9Ñ]{5,}", lz.sin_tildes(str(nombre)).upper())) if isinstance(nombre, str) else set()
+
+
+def equivalencias_z023(entidades: pd.DataFrame, z023: pd.DataFrame) -> dict[str, str]:
+    """{código de la entidad en EVAPLAN: código de la misma entidad en el Z023}.
+
+    Las dependencias centrales usan el mismo código en ambos sistemas. Las descentralizadas NO (INDERVALLE es '1216'
+    en EVAPLAN y '0006' en el Z023): se enlazan por el nombre, usando una palabra distintiva que solo aparezca en una
+    entidad del Z023 (p. ej. 'INDERVALLE'). Si no se puede identificar, la entidad queda fuera del diccionario.
+    `entidades`: columnas `codigo_entidad` y `nombre_entidad`.
+    """
+    z = z023.drop_duplicates("dependencia").set_index("dependencia")["nombre_dependencia"]
+    palabras = {cod: _palabras(n) for cod, n in z.items()}
+    frecuencia = pd.Series([w for ws in palabras.values() for w in ws]).value_counts()
+    unicas = {cod: {w for w in ws if frecuencia[w] == 1} for cod, ws in palabras.items()}
+    out = {}
+    for cod, nombre in entidades.drop_duplicates("codigo_entidad")[["codigo_entidad", "nombre_entidad"]].itertuples(index=False):
+        if cod in z.index:
+            out[cod] = cod
+            continue
+        puntaje = {c: len(u & _palabras(nombre)) for c, u in unicas.items()}
+        mejor = max(puntaje.values(), default=0)
+        candidatos = [c for c, n in puntaje.items() if n == mejor]
+        if mejor > 0 and len(candidatos) == 1:
+            out[cod] = candidatos[0]
+    return out
+
+
+def entidades_de(*fuentes: pd.DataFrame) -> pd.DataFrame:
+    """Códigos y nombres de entidad de los DataFrames de EVAPLAN (PI y Centralizadas)."""
+    partes = [f[["codigo_entidad", "nombre_entidad"]] for f in fuentes if f is not None and "nombre_entidad" in f.columns]
+    return pd.concat(partes, ignore_index=True).dropna(subset=["codigo_entidad"]) if partes else \
+        pd.DataFrame(columns=["codigo_entidad", "nombre_entidad"])
+
+
+def construir_aportes(z023: pd.DataFrame, matriz: pd.DataFrame, vigencia: int,
+                      equivalencias: dict[str, str] | None = None) -> pd.DataFrame:
+    """Una fila por meta × dependencia × proyecto, solo para las metas de `matriz` y la `vigencia` dada.
+
+    `equivalencias` ({código EVAPLAN: código Z023}, ver `equivalencias_z023`) decide qué aportes son "propios".
+    """
     z = z023[(z023["vigencia"] == vigencia) & z023["codigo_mp"].isin(set(matriz["codigo_mp"]))]
     if z.empty:
         return pd.DataFrame(columns=COLUMNAS_APORTES)
-    dueña = matriz.drop_duplicates("codigo_mp").set_index("codigo_mp")["codigo_entidad"].astype("string")
+    eq = equivalencias or {}
+    dueña = (matriz.drop_duplicates("codigo_mp").set_index("codigo_mp")["codigo_entidad"].astype("string")
+             .map(lambda c: eq.get(c, c)))
     g = (z.assign(_sin_ps=z["ps_actividad"].isna())
          .groupby(["codigo_mp", "dependencia", "proyecto_ppm"], dropna=False, sort=True)
          .agg(nombre_dependencia=("nombre_dependencia", "first"), codigo_proyecto_ps=("codigo_proyecto_ps", "first"),

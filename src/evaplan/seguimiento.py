@@ -200,7 +200,8 @@ def construir_matriz(pi_mp: pd.DataFrame, centralizadas: pd.DataFrame, drive_mp:
         })
     m = pd.DataFrame(filas)
     if z023 is not None:
-        m = m.join(A.resumen_por_meta(A.construir_aportes(z023, m, vigencia), m["codigo_mp"]), on="codigo_mp")
+        eq = A.equivalencias_z023(A.entidades_de(pi_mp, centralizadas), z023)
+        m = m.join(A.resumen_por_meta(A.construir_aportes(z023, m, vigencia, eq), m["codigo_mp"]), on="codigo_mp")
     h = detectar_hallazgos(m, criterio_flexible)
     if len(h):
         # El texto lista primero lo que requiere revisión y después lo informativo; el contador solo cuenta lo primero.

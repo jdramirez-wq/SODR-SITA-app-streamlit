@@ -37,6 +37,19 @@ Si la estructura de un archivo cambia, el lector lanza `EsquemaError` indicando 
 - Cadena de Valor (`.docx`) y reporte MGA (`.xml`). Pendiente analizarlos y añadirlos al diccionario. (El Z023 ya
   tiene contrato de datos, ver abajo.)
 
+## Entidades descentralizadas (ejemplo: INDERVALLE)
+Se descargan los mismos dos archivos de EVAPLAN (el segundo se llama `Descentralizadas.xlsx`) y **tienen la misma
+estructura**: los lectores actuales los leen sin cambios. Lo que sí es distinto (comprobado con INDERVALLE, 6-oct):
+- **Código de entidad distinto en cada sistema:** INDERVALLE es `1216` en EVAPLAN y `0006` en el Z023. Las dependencias
+  centrales usan el mismo código en ambos. La app enlaza las descentralizadas por el nombre (`aportes.equivalencias_z023`).
+- **Sin código PS:** la actividad se identifica con el código PPM (numérico, sin `/`), que es `PPM: Actividad` del Z023
+  (119 de 119 actividades coincidieron). El código de proyecto es el de PPM (`PI-102710`).
+- **Su Plan de Acción incluye proyectos de otras dependencias** que aportan a sus metas (en el ejemplo, de Educación y
+  de Vivienda), a diferencia de Centralizadas, que trae solo los proyectos de los que la dependencia es centro gestor.
+  Por eso "propio" o "ajeno" se decide con el código de la entidad en el Z023, no por estar en el Plan de Acción.
+- **Información financiera:** la registra la propia entidad (no viene de SAP); a cierre de año requiere certificado
+  financiero (ver "Recordatorios de cierre" en [REGLAS_DE_NEGOCIO.md](REGLAS_DE_NEGOCIO.md)).
+
 ## Z023 consolidado (cuarto cuadro opcional de la página)
 **Qué es:** repositorio maestro curado que unifica los Z023 de SAP (módulo PPM) del PDD 2024-2027 y corrige los errores de
 formulación (metas faltantes, códigos MGA erróneos, área funcional). Libro `Z023_PDD2024-2027_Cons` con 11 hojas; los

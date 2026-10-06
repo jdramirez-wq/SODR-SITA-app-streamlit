@@ -19,6 +19,7 @@ from src.evaplan import pipeline, reportes
 from src.evaplan.lectura import EsquemaError
 from src.evaplan.prompts import PERIODOS, generar_prompt_sistema
 from src.evaplan.aportes import ETIQUETAS_APORTES
+from src.evaplan.recordatorios import recordatorios_cierre
 from src.evaplan.reglas import etiquetar
 from src.evaplan.seguimiento import ETIQUETAS
 from src.evaplan.version import version_codigo
@@ -80,8 +81,8 @@ with c1:
     st.subheader("1. Plan Indicativo MP")
     f_pi = st.file_uploader("'Informe de Plan Indicativo MP.xlsx' (EVAPLAN)", type=["xlsx"], key="up_pi")
 with c2:
-    st.subheader("2. Centralizadas")
-    f_ce = st.file_uploader("'Centralizadas.xlsx' (EVAPLAN)", type=["xlsx"], key="up_ce")
+    st.subheader("2. Plan de Acción")
+    f_ce = st.file_uploader("'Centralizadas.xlsx' o 'Descentralizadas.xlsx' (EVAPLAN)", type=["xlsx"], key="up_ce")
 with c3:
     st.subheader("3. Plan Indicativo (Drive)")
     f_dr = st.file_uploader("Opcional: libro del Plan Indicativo en .xlsx", type=["xlsx"], key="up_dr",
@@ -126,6 +127,18 @@ if not res.usa_drive:
 m = res.matriz
 R = res.resumen
 st.caption(f"Vigencia analizada: **{res.vigencia}** · Periodo del prompt: {periodo}")
+recordatorios = recordatorios_cierre(periodo, m, res.es_descentralizada, res.aportes if res.usa_z023 else None)
+if recordatorios:
+    with st.container(border=True):
+        st.warning("**⚠️ Recordatorio de cierre de vigencia: hay certificados por solicitar.** Son pendientes de quien "
+                   "revisa, no hallazgos sobre lo que reportó la entidad. También se agregan al prompt.")
+        for r in recordatorios:
+            st.markdown(f"**{r['titulo']}.** {r['texto']}")
+            if r["metas"]:
+                st.caption("Metas: " + ", ".join(r["metas"]))
+if res.usa_z023 and not res.z023_equivalencias:
+    st.warning("No pude identificar la entidad del export en el Z023 (los códigos y nombres no coinciden): todos los "
+               "proyectos del Z023 se muestran como de otras entidades.")
 k = st.columns(5)
 k[0].metric("Metas en el Plan Indicativo", R["metas_en_plan_indicativo"])
 k[1].metric("Reportadas en EVAPLAN", R["metas_reportadas"])
@@ -267,7 +280,7 @@ with tab_out:
     st.subheader("🤖 Asistente de Auditoría EVAPLAN (prompt listo)")
     with st.expander("📋 Ver y copiar el prompt para Gemini / ChatGPT", expanded=True):
         st.markdown("💡 **Paso 1:** copia el prompt con el icono de la esquina superior derecha del bloque.")
-        st.code(generar_prompt_sistema(periodo, res.vigencia, con_hechos), language="markdown", wrap_lines=True)
+        st.code(generar_prompt_sistema(periodo, res.vigencia, con_hechos, recordatorios), language="markdown", wrap_lines=True)
         st.markdown("🚀 **Paso 2:** pégalo en la IA y luego adjunta el PDF y el Excel descargados.")
         g1, g2 = st.columns(2)
         g1.link_button("🌐 Ir a Google Gemini Web", "https://gemini.google.com/", use_container_width=True, type="primary")
