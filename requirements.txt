@@ -1,4 +1,4 @@
-streamlit
+streamlit>=1.50    # navegación superior, botones con width="stretch" y tipografía del tema
 pandas
 numpy
 openpyxl

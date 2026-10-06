@@ -39,7 +39,7 @@ scripts/                     generar_diccionario.py (docs desde esquemas), gener
 tests/                       pytest sobre los ejemplos ficticios de data/ejemplos/
 data/                        Solo ejemplos ficticios (ver data/README.md)
 docs/                        DICCIONARIO_DE_DATOS (generado), ANALISIS_FUENTES_EVAPLAN, REGLAS_DE_NEGOCIO,
-                             PREGUNTAS_ABIERTAS, FUENTES_DE_DATOS, ARQUITECTURA, FLUJO_DE_TRABAJO, HOJA_DE_RUTA
+                             PREGUNTAS_ABIERTAS, FUENTES_DE_DATOS, ARQUITECTURA, FLUJO_DE_TRABAJO, HOJA_DE_RUTA, PASO_A_MAIN
 .github/                     CI (ruff + compilación + pytest), plantillas de PR e issues
 ```
 
@@ -117,7 +117,7 @@ python scripts/generar_ejemplos.py      # regenera los archivos ficticios
 - `paginas/2_POAI_2027.py` (~1070 líneas) y `paginas/1_Auditoria_EVAPLAN.py` (~460) son monolíticos.
 - El enlace de Drive del Plan Indicativo está escrito en `paginas/2_POAI_2027.py` (`URL_DRIVE_EXCEL`);
   debe pasar a `st.secrets` y la hoja debe tener permisos acordes (ver docs/HOJA_DE_RUTA.md).
-- `paginas/2_POAI_2027.py` no usa aún `src/evaplan`; `requirements.txt` sin versiones fijadas.
+- `paginas/2_POAI_2027.py` no usa aún `src/evaplan`; `requirements.txt` solo fija la versión mínima de Streamlit.
 - `paginas/2_POAI_2027.py` aún usa `use_container_width` (obsoleto; las vistas nuevas usan `width="stretch"`).
 - Pendiente revisar el script del compañero al cerrar la primera versión de Seguimiento EVAPLAN.
 - Lint de CI limitado a errores reales; ampliar al ordenar el código.
