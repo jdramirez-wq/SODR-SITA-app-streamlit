@@ -66,6 +66,8 @@ informe. Función: `recordatorios.recordatorios_cierre`. El detalle de los certi
 | P5 | Registro con obligaciones > 0, sin avance físico y **con cantidad programada** en la vigencia. Sin observación que lo explique = advertencia; con observación = informativo | ✅ | advertencia / info | `ejecucion_financiera_vs_fisica` |
 | P5b | Registro sin cantidad programada en la vigencia (no hay avance que medir) | ✅ | info | `avance_consistente` |
 | P5c | Registro con cantidad programada y `% avance` vacío (pasa en las descentralizadas: INDERVALLE tenía 61 de 119): en el promedio de actividades **cuenta como 0 %**, igual que EVAPLAN hace con la cantidad ejecutada vacía; sin cantidad programada no cuenta | ✅ | info | `avance_vacio_con_programacion`, `seguimiento._consolidar_plan_de_accion` |
+| P5d | **Dos promedios de avance de actividades.** (a) De TODAS las actividades (registros) de la meta: **es el que PRIMA para el análisis**; es el de la versión original de la página (`mean` sobre todos los registros del grupo) y el que usa el prompt (Alerta Tipo 3). (b) Solo de los registros con obligaciones > 0: complementario, para ver la brecha con (a); "sin dato" si ninguno tiene obligaciones (nunca 0). Ambos se entregan en la matriz, el Excel, el PDF y la página, y el prompt explica cuál prima | ✅ | hecho | `seguimiento.PROMEDIO_QUE_PRIMA` |
+| P5e | Sumas sin ningún valor (todas las obligaciones vacías): **"sin dato"**, no 0 (decisión del equipo, 6-oct) | ✅ | hecho | `_consolidar_plan_de_accion` |
 | P6 | `CON EJECUCION` ⇔ obligaciones > 0 | ✅ | advertencia | `ejecucion_financiera_vs_fisica` |
 | P7 | Presupuesto definitivo de la meta > recursos de la vigencia programados en el PI | ❓ | advertencia | `presupuesto_vs_recursos_pi` |
 

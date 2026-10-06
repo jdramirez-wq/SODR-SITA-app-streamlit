@@ -111,7 +111,11 @@ def a_pdf(matriz: pd.DataFrame) -> bytes:
         y = _bloque(c, f"Suma Presupuesto Definitivo: {_fmt(f['ppto_definitivo'])}", y, width, height)
         y = _bloque(c, f"Suma Total Obligaciones: {_fmt(f['ppto_obligaciones'])}", y, width, height)
         y = _bloque(c, f"Relación Obligaciones / Definitivo: {_pct(f['pct_ejecucion_financiera'])}", y, width, height)
-        y = _bloque(c, f"Promedio Avance Actividades (todas): {_fmt(f['avance_actividades'], '{:.3f}')}", y, width, height)
+        y = _bloque(c, f"Promedio Avance Actividades (TODAS; es el que PRIMA para el análisis): "
+                       f"{_fmt(f['avance_actividades'], '{:.3f}')}", y, width, height)
+        y = _bloque(c, f"Promedio Avance solo de actividades con obligaciones (complementario; "
+                       f"{f['n_registros_con_obligaciones']} de {f['n_registros']} registros): "
+                       f"{_fmt(f['avance_actividades_con_obligaciones'], '{:.3f}')}", y, width, height)
         y = _bloque(c, f"Avance de actividades por proyecto: {_fmt(f['avance_por_proyecto'])}", y, width, height)
         y -= 8
         y = _bloque(c, "ALERTAS OBJETIVAS DE LA HERRAMIENTA (no son dictamen)", y, width, height, 11, True)

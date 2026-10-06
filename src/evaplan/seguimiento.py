@@ -20,13 +20,19 @@ from .validaciones import ANIOS, COLUMNAS_HALLAZGO, inferir_vigencia
 COMPORTAMIENTOS_ACUMULATIVOS = ("Incremento Acumulado", "Incremento Capacidad")
 _RE_GESTION = re.compile(r"gesti[oó]n|donaci[oó]n|cofinanci|sin\s+costo", re.IGNORECASE)
 
+# Promedio de avance de actividades que PRIMA para el análisis: el de TODAS las actividades (registros) de la meta, como
+# en la versión original de la página y como lo describe el prompt ("Promedio Avance Actividades"). El promedio de las
+# que tienen obligaciones se entrega como complemento, para ver la brecha entre ambos.
+PROMEDIO_QUE_PRIMA = "todas"
+
 COLUMNAS_MATRIZ = [
     "codigo_entidad", "codigo_mp", "descripcion_mp", "mr_del_mp", "comportamiento", "unidad_medida", "periodicidad",
     "estado_reporte", "vigencia", "pg", "meta_vigencia", "meta_vigencia_export", "meta_vigencia_np", "logro_previo",
     "resultado", "valor_proyectado", "pct_proyectado_vs_meta", "pct_avance_vigencia", "avance_cuatrienio", "pct_avance_pg",
     "tiene_plan_de_accion", "n_proyectos", "proyectos", "n_registros",
     "ppto_definitivo", "ppto_obligaciones", "ppto_disponible", "pct_ejecucion_financiera",
-    "avance_actividades", "avance_por_proyecto", "n_registros_con_obligaciones_sin_avance",
+    "avance_actividades", "avance_actividades_con_obligaciones", "n_registros_con_obligaciones",
+    "avance_por_proyecto", "n_registros_con_obligaciones_sin_avance",
     "n_registros_sin_avance_sin_observacion", "brecha_meta_vs_actividades",
     "focalizacion", "principal_logro", "analisis_logro", "dificultades_gestiones", "menciona_gestion",
     "n_alertas", "alertas",
@@ -49,7 +55,9 @@ ETIQUETAS = {
     "tiene_plan_de_accion": "Tiene plan de acción", "n_proyectos": "N.º proyectos", "proyectos": "Proyectos asociados",
     "n_registros": "N.º registros presupuestales", "ppto_definitivo": "Ppto. definitivo", "ppto_obligaciones": "Obligaciones",
     "ppto_disponible": "Disponible", "pct_ejecucion_financiera": "% ejecución financiera",
-    "avance_actividades": "Avance promedio actividades (0-1)", "avance_por_proyecto": "Avance actividades por proyecto",
+    "avance_actividades": "Avance promedio de TODAS las actividades (0-1) · PRIMA para el análisis",
+    "avance_actividades_con_obligaciones": "Avance promedio solo de actividades con obligaciones (0-1) · complementario",
+    "n_registros_con_obligaciones": "N.º registros con obligaciones", "avance_por_proyecto": "Avance actividades por proyecto",
     "n_registros_con_obligaciones_sin_avance": "Registros con obligaciones y sin avance físico",
     "n_registros_sin_avance_sin_observacion": "…de ellos, sin observación que lo explique",
     "brecha_meta_vs_actividades": "Brecha meta vs actividades", "focalizacion": "Focalización",
@@ -89,6 +97,7 @@ def _consolidar_plan_de_accion(ce: pd.DataFrame) -> pd.DataFrame:
         # centralizadas (cantidad ejecutada vacía -> 0 %). Sin cantidad programada no hay avance que medir (queda vacío).
         avance = g["avance_actividad_pct"].where(
             g["avance_actividad_pct"].notna() | (g["cant_programada_vigencia"].fillna(0) <= 0), 0.0)
+        con_obligaciones = g["ppto_obligaciones"].fillna(0) > 0
         por_proyecto = avance.groupby(g["codigo_proyecto"]).mean()
         proyectos = (g[["codigo_proyecto", "nombre_proyecto"]].drop_duplicates()
                      .apply(lambda r: f"{r['codigo_proyecto']} - {r['nombre_proyecto']}", axis=1))
@@ -104,7 +113,11 @@ def _consolidar_plan_de_accion(ce: pd.DataFrame) -> pd.DataFrame:
             "ppto_obligaciones": g["ppto_obligaciones"].sum(min_count=1),
             "ppto_disponible": g["ppto_disponible"].sum(min_count=1),
             # fracción 0-1, como la usa el prompt del auditor (promedio por registro, como la página original)
-            "avance_actividades": avance.mean() / 100,
+            "avance_actividades": avance.mean() / 100,        # TODAS las actividades: es el que prima
+            # Solo los registros con obligaciones (> 0): complementario; vacío si ninguno tiene obligaciones
+            "avance_actividades_con_obligaciones": (avance[con_obligaciones].mean() / 100
+                                                    if con_obligaciones.any() else pd.NA),
+            "n_registros_con_obligaciones": int(con_obligaciones.sum()),
             "avance_por_proyecto": " | ".join(f"{p}: {v:.1f} %" for p, v in por_proyecto.items() if not _na(v)),
             "n_registros_con_obligaciones_sin_avance": len(sin_avance),
             "n_registros_sin_avance_sin_observacion": int(sin_avance["observacion"].isna().sum()),
@@ -167,6 +180,7 @@ def construir_matriz(pi_mp: pd.DataFrame, centralizadas: pd.DataFrame, drive_mp:
         obligaciones = _num(p["ppto_obligaciones"]) if p is not None else pd.NA
         pct_fin = obligaciones / definitivo if not _na(obligaciones) and not _na(definitivo) and definitivo > 0 else pd.NA
         avance_act = _num(p["avance_actividades"]) if p is not None else pd.NA
+        avance_act_obl = _num(p["avance_actividades_con_obligaciones"]) if p is not None else pd.NA
 
         textos = [r[c] if r is not None and not _na(r[c]) else "" for c in
                   ("principal_logro", "analisis_logro", "dificultades_gestiones")]
@@ -191,6 +205,8 @@ def construir_matriz(pi_mp: pd.DataFrame, centralizadas: pd.DataFrame, drive_mp:
             "ppto_disponible": _num(p["ppto_disponible"]) if p is not None else pd.NA,
             "pct_ejecucion_financiera": pct_fin,
             "avance_actividades": avance_act,
+            "avance_actividades_con_obligaciones": avance_act_obl,
+            "n_registros_con_obligaciones": p["n_registros_con_obligaciones"] if p is not None else 0,
             "avance_por_proyecto": p["avance_por_proyecto"] if p is not None else pd.NA,
             "n_registros_con_obligaciones_sin_avance":
                 p["n_registros_con_obligaciones_sin_avance"] if p is not None else 0,
@@ -218,7 +234,8 @@ def construir_matriz(pi_mp: pd.DataFrame, centralizadas: pd.DataFrame, drive_mp:
     m["n_alertas"] = m["codigo_mp"].map(n_rev).fillna(0).astype(int)      # sin contar las informativas
     for c in ("pg", "meta_vigencia", "meta_vigencia_export", "logro_previo", "resultado", "valor_proyectado", "pct_proyectado_vs_meta", "pct_avance_vigencia",
               "avance_cuatrienio", "pct_avance_pg", "ppto_definitivo", "ppto_obligaciones", "ppto_disponible",
-              "pct_ejecucion_financiera", "avance_actividades", "brecha_meta_vs_actividades"):
+              "pct_ejecucion_financiera", "avance_actividades", "avance_actividades_con_obligaciones",
+              "brecha_meta_vs_actividades"):
         m[c] = m[c].astype("Float64")
     return m[COLUMNAS_MATRIZ + (COLUMNAS_Z023 if z023 is not None else [])]
 

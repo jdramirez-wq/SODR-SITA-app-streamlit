@@ -87,7 +87,10 @@ python scripts/generar_ejemplos.py      # regenera los archivos ficticios
 - **Información no pública:** no guardar el Z023 consolidado ni datos similares en el repo ni en carpetas de lectura
   abierta; se subirían por sesión (`st.file_uploader`) y solo se usan en memoria.
 - El indicador "con alertas" cuenta solo advertencias y errores; lo informativo no suma.
-- Avance de actividades: promediar **por proyecto de inversión** (lo exige el prompt), además del global.
+- Avance de actividades: promediar **por proyecto de inversión** (lo exige el prompt), además del global. Hay DOS promedios:
+  el de TODAS las actividades (**prima** para el análisis; era el de la versión original) y el de las que tienen obligaciones
+  (complementario, `avance_actividades_con_obligaciones`). Se entregan ambos y el prompt dice cuál prima. Un % de avance vacío
+  con cantidad programada cuenta como 0. Sumas totalmente vacías = "sin dato" (no 0).
 - Llave de entidad = **código** (9999), nunca el nombre. Llave de meta: `codigo_mp` (18 caracteres) /
   `codigo_mr` (5 dígitos). Para seguimiento comparar contra el bloque **vigente** de Drive, no el original.
 - Cachear lecturas pesadas con `st.cache_data`; estado entre interacciones con `st.session_state`.

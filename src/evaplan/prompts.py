@@ -22,6 +22,7 @@ ejecución financiera, promedio de avance de actividades —global y por proyect
 y verificadas por código: úsalas tal cual y no las recalcules. La columna "Alertas" solo lista incoherencias
 objetivas (por ejemplo: avance sin obligaciones, meta sin reporte); no es un dictamen. Las metas con estado
 "Sin reporte en EVAPLAN" no tienen narrativa: repórtalas como omisión de reporte, no las evalúes.
+Sobre el avance de las actividades hay DOS promedios y no son lo mismo: "Avance promedio de TODAS las actividades" (todos los registros de la meta, incluidos los que no tienen obligaciones) y "Avance promedio solo de actividades con obligaciones". El que PRIMA para tu análisis (por ejemplo, en la Alerta Tipo 3) es el de TODAS las actividades; el otro es complementario. Si ambos difieren de forma notable, señálalo: significa que hay actividades sin obligaciones que bajan o suben el promedio. Si ninguna actividad tiene obligaciones, el segundo promedio no existe ("sin dato"): no lo trates como 0.
 Tu aporte es el JUICIO: coherencia narrativa, suficiencia del reporte, gravedad de las alertas y retroalimentación.
 """
 

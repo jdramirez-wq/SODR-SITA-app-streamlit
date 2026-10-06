@@ -261,3 +261,34 @@ def test_avance_vacio_con_cantidad_programada_cuenta_como_cero_en_el_promedio():
     assert p["avance_por_proyecto"] == "P1: 50.0 %"
     q = V.avance_vacio_con_programacion(ce)
     assert list(q["llave"]) == ["MP1"] and "1 de 4" in q.loc[0, "detalle"] and q.loc[0, "severidad"] == "info"
+
+
+def test_dos_promedios_de_avance_prima_el_de_todas_las_actividades():
+    ce = pd.DataFrame({
+        "codigo_mp": ["MP1"] * 4, "codigo_proyecto": ["P1"] * 4, "nombre_proyecto": ["a"] * 4,
+        "avance_actividad_pct": [80.0, 40.0, 0.0, 0.0], "cant_programada_vigencia": [1.0] * 4,
+        "ppto_definitivo": [10.0] * 4, "ppto_obligaciones": [5.0, 1.0, 0.0, pd.NA], "ppto_disponible": [5.0] * 4,
+        "observacion": [pd.NA] * 4, "fila_excel": [3, 4, 5, 6]})
+    p = S._consolidar_plan_de_accion(ce).iloc[0]
+    assert p["avance_actividades"] == pytest.approx(0.30)                   # (80+40+0+0)/4: TODAS
+    assert p["avance_actividades_con_obligaciones"] == pytest.approx(0.60)  # (80+40)/2: solo con obligaciones > 0
+    assert p["n_registros_con_obligaciones"] == 2 and S.PROMEDIO_QUE_PRIMA == "todas"
+
+
+def test_sin_obligaciones_el_promedio_complementario_es_sin_dato_no_cero():
+    ce = pd.DataFrame({
+        "codigo_mp": ["MP1"] * 2, "codigo_proyecto": ["P1"] * 2, "nombre_proyecto": ["a"] * 2,
+        "avance_actividad_pct": [10.0, 20.0], "cant_programada_vigencia": [1.0] * 2,
+        "ppto_definitivo": [10.0] * 2, "ppto_obligaciones": [0.0, pd.NA], "ppto_disponible": [10.0] * 2,
+        "observacion": [pd.NA] * 2, "fila_excel": [3, 4]})
+    p = S._consolidar_plan_de_accion(ce).iloc[0]
+    assert pd.isna(p["avance_actividades_con_obligaciones"]) and p["avance_actividades"] == pytest.approx(0.15)
+    vacio = S._consolidar_plan_de_accion(ce.assign(ppto_obligaciones=pd.NA)).iloc[0]
+    assert pd.isna(vacio["ppto_obligaciones"])                              # todo vacío: "sin dato", no 0
+
+
+def test_el_prompt_explica_cual_promedio_prima():
+    from src.evaplan.prompts import generar_prompt_sistema
+    t = generar_prompt_sistema("Revisión a Cierre de Vigencia", 2026, True)
+    assert "El que PRIMA para tu análisis" in t and "TODAS las actividades" in t
+    assert "PRIMA" not in generar_prompt_sistema("Revisión a Cierre de Vigencia", 2026, False)

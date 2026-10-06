@@ -155,7 +155,7 @@ def _vista(df: pd.DataFrame) -> pd.DataFrame:
     """Copia para mostrar: fracciones como porcentaje y nombres legibles."""
     d = df.copy()
     for c in ("pct_avance_vigencia", "pct_avance_pg", "pct_ejecucion_financiera", "avance_actividades",
-              "brecha_meta_vs_actividades"):
+              "avance_actividades_con_obligaciones", "brecha_meta_vs_actividades"):
         if c in d:
             d[c] = d[c].astype("Float64") * 100
     return d
@@ -163,7 +163,7 @@ def _vista(df: pd.DataFrame) -> pd.DataFrame:
 
 PCT = {c: st.column_config.NumberColumn(ETIQUETAS[c].replace(" (0-1)", ""), format="%.1f %%")
        for c in ("pct_avance_vigencia", "pct_avance_pg", "pct_ejecucion_financiera", "avance_actividades",
-                 "brecha_meta_vs_actividades")}
+                 "avance_actividades_con_obligaciones", "brecha_meta_vs_actividades")}
 DINERO = {c: st.column_config.NumberColumn(ETIQUETAS[c], format="$ %,.0f")
           for c in ("ppto_definitivo", "ppto_obligaciones", "ppto_disponible")}
 
@@ -200,7 +200,8 @@ with tab_res:
     st.subheader("Plan de acción vs. meta")
     st.dataframe(
         _vista(m[m["tiene_plan_de_accion"]])[["codigo_mp", "pct_avance_vigencia", "pct_ejecucion_financiera",
-                                              "avance_actividades", "brecha_meta_vs_actividades"]]
+                                              "avance_actividades", "avance_actividades_con_obligaciones",
+                                              "brecha_meta_vs_actividades"]]
         .rename(columns=ETIQUETAS),
         column_config={ETIQUETAS[c]: v for c, v in PCT.items()}, hide_index=True, use_container_width=True)
     st.caption("La brecha es un número, no un veredicto: sin cronograma de ejecución no hay umbral único.")
@@ -219,7 +220,7 @@ with tab_mat:
               | v["descripcion_mp"].astype("string").str.contains(texto, case=False, na=False)]
     cols = ["codigo_mp", "estado_reporte", "comportamiento", "meta_vigencia", "resultado", "pct_avance_vigencia",
             "valor_proyectado", "pct_avance_pg", "ppto_definitivo", "ppto_obligaciones", "pct_ejecucion_financiera",
-            "avance_actividades", "n_alertas"]
+            "avance_actividades", "avance_actividades_con_obligaciones", "n_alertas"]
     if res.usa_z023:
         cols += ["n_proyectos_z023", "n_proyectos_ajenos"]
     st.dataframe(_vista(v)[cols].rename(columns=ETIQUETAS),
@@ -238,6 +239,13 @@ with tab_mat:
         c.metric("% vs meta", f"{f['pct_avance_vigencia'] * 100:.1f} %" if pd.notna(f["pct_avance_vigencia"]) else "—")
         d.metric("Proyección de cierre", f"{f['valor_proyectado']:g}" if pd.notna(f["valor_proyectado"]) else "sin dato")
         st.write(f"**Comportamiento:** {f['comportamiento']} · **Proyectos:** {f['proyectos'] if pd.notna(f['proyectos']) else 'sin plan de acción'}")
+        st.write(f"**Avance promedio de TODAS las actividades (prima para el análisis):** "
+                 f"{f['avance_actividades'] * 100:.1f} %" if pd.notna(f["avance_actividades"]) else
+                 "**Avance promedio de TODAS las actividades:** sin plan de acción")
+        st.write(f"**Avance promedio solo de actividades con obligaciones (complementario):** "
+                 + (f"{f['avance_actividades_con_obligaciones'] * 100:.1f} % ({f['n_registros_con_obligaciones']} de "
+                    f"{f['n_registros']} registros)" if pd.notna(f["avance_actividades_con_obligaciones"])
+                    else "sin dato (ningún registro tiene obligaciones)"))
         st.write(f"**Avance de actividades por proyecto:** {f['avance_por_proyecto'] if pd.notna(f['avance_por_proyecto']) else '—'}")
         if res.usa_z023:
             ap = res.aportes[res.aportes["codigo_mp"] == mp]
