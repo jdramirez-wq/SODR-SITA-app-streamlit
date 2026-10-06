@@ -257,6 +257,39 @@ Libro maestro: todas las metas de resultado de TODAS las entidades.
 | 31 | `2027 / VAL ALC 2027` | `valor_2027` | valor_np (2 columnas) | no | Valor de la vigencia 2027: logro si el encabezado dice 'VAL ALC', meta si no. | Valor por vigencia. Vigencia cerrada: LOGRO alcanzado (el técnico renombra el encabezado a 'VAL ALC AAAA' en Drive, columnas AK:AN). Vigencia pendiente: META, que se modifica si se reprograma. ✅ Confirmado. |
 | 32 | `VERIFICACIÓN DEL COMPORTAMIENTO DE META EN REPROGRAMACIÓN` | `verificacion_comportamiento` | texto | sí | Comportamiento verificado. | 27 de 75 filas en 'ERROR'. |
 
+## Z023 consolidado (SAP · PPM)
+
+Actividades de los proyectos de inversión de TODAS las dependencias y entidades descentralizadas, con su meta de producto (MP), BPIN, producto MGA y valor. Una fila por actividad y vigencia.
+
+- **Origen:** Libro 'Z023_PDD2024-2027_Cons' (hoja 'Hoja1') que consolida el Z023 descargado de SAP. INFORMACIÓN NO PÚBLICA: se sube por sesión (`st.file_uploader`), nunca al repositorio.
+- **Hoja:** `Hoja1` · **Encabezados en la fila:** 1
+- **Llave:** `ppm_actividad`
+- **Lector:** `leer_z023()`
+
+> El libro tiene 11 hojas (Menú, Hoja1, TD_Proy, TD, SisPT, PDD, Catálogo, Sectores, ObjGen, ObjEsp, Control_Actualizaciones). Solo se lee 'Hoja1' (73 columnas); se usan las columnas listadas aquí.
+> Una MP puede recibir aportes de varios proyectos y de varias dependencias (metas compartidas), incluidas entidades descentralizadas.
+> Una fila con la misma actividad puede repetirse por vigencia: filtrar siempre por `vigencia`.
+
+| # | Encabezado original | Campo canónico | Tipo | ¿Vacío? | Descripción | Notas |
+|---|---|---|---|---|---|---|
+| 1 | `Dependencia` | `dependencia` | codigo | no | Código de la dependencia o entidad dueña del proyecto (= `codigo_entidad` de EVAPLAN). | Las entidades descentralizadas llevan códigos '00xx' (observado). |
+| 2 | `Descripción Dependencia` | `nombre_dependencia` | texto | no | Nombre abreviado de la dependencia. |  |
+| 3 | `PPM: Proyecto` | `proyecto_ppm` | codigo | no | Código del proyecto en PPM ('PI-999999'). | Distinto del código PS del proyecto ('PI99-999999', prefijo de `ps_actividad`). |
+| 4 | `Descripción PROYECTO` | `nombre_proyecto` | texto | no | Nombre del proyecto. |  |
+| 5 | `Cod.BPIN DNP` | `bpin` | codigo | sí | BPIN del proyecto (válido: empieza por 2 y tiene 12-16 caracteres). | Hay BPIN vacíos o no válidos; el consolidado los completa con una macro. |
+| 6 | `Codigo Meta Resultado` | `codigo_mr` | codigo | sí | 'MR99001' → se guarda '99001'. |  |
+| 7 | `Codigo Meta Producto` | `codigo_mp` | codigo | sí | Meta de producto a la que aporta la actividad (18 caracteres). | Pocas filas sin MP o con 17 caracteres: se reportan en Calidad de datos. |
+| 8 | `PS: Producto` | `ps_producto` | codigo | sí | Código PS del producto ('PI99-9999991101'). | Vacío en las entidades descentralizadas (solo llegan a PPM). |
+| 9 | `PPM: Actividad` | `ppm_actividad` | codigo | no | Código PPM de la actividad. ÚNICO por fila (llave). |  |
+| 10 | `PS: Actividad` | `ps_actividad` | codigo | sí | Código PS de la actividad: '<proyecto PS>/1/<obj. específico>/<producto>/<actividad>'. | Es el mismo código que 'Cód. Actividad' de Centralizadas. Vacío en descentralizadas y en actividades aún sin código PS. Puede repetirse (una actividad con varias filas). |
+| 11 | `Descripción Actividad` | `descripcion_actividad` | texto | sí | Texto de la actividad. |  |
+| 12 | `Vigencia` | `vigencia` | entero | no | Año de la fila (2024, 2025, 2026…). |  |
+| 13 | `Fondo` | `codigo_fondo` | codigo | sí | Código de la fuente de financiación. |  |
+| 14 | `Descripción Fondo` | `nombre_fondo` | texto | sí | Nombre de la fuente de financiación. |  |
+| 15 | `Tipo Actividad` | `tipo_actividad` | texto | sí | Inversión / funcionamiento… |  |
+| 16 | `Valor de Actividad` | `valor_actividad` | moneda | sí | Valor de la actividad en la vigencia (COP). | En el Excel llega numérico; en una exportación de texto puede venir ' $  3,200,000 '. |
+| 17 | `Centro Gestor de la MP` | `centro_gestor_mp` | codigo | sí | Centro gestor responsable de la MP (≠ dependencia dueña del proyecto). | Columna calculada por fórmula en el consolidado; puede venir vacía o con error. |
+
 ## Vocabularios controlados
 
 Valores esperados en columnas categóricas. Un valor fuera de la lista debe revisarse, no ignorarse.

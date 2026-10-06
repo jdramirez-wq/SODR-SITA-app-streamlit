@@ -6,6 +6,8 @@ Incluyen anomalías sembradas a propósito (ver docs/ANALISIS_FUENTES_EVAPLAN.md
   - una meta existe en Drive pero falta en el export de EVAPLAN
   - una actividad con obligaciones y sin avance físico
   - una meta con PG incoherente en el PI original de Drive
+  - Z023: una meta compartida (aportes de otra dependencia y de una entidad descentralizada sin código PS),
+    una actividad de Centralizadas ausente del Z023, un BPIN no válido y una fila sin meta de producto
 
 Uso:  python scripts/generar_ejemplos.py
 """
@@ -228,7 +230,78 @@ def drive() -> None:
     _guardar(wb, "ejemplo_PI_Drive.xlsx")
 
 
+Z023_ENCABEZADOS = [
+    "Dependencia", "Descripción Dependencia", "PPM: Proyecto", "Código Programa", "Descripción Programa",
+    "Descripción PROYECTO", "Sector", "Descripción Sector", "Area Funcional", "Cod.BPIN DNP", "Subprograma",
+    "Descripción de Subprograma", "Programa", "Descripción de Programa", "Linea de Accion",
+    "Descripción de Linea de Accion", "Pilar / LT", "Descripción de Pilar / LT", "Plan de Desarrollo",
+    "Descripción de Plan de Desarrollo", "Codigo Meta Resultado", "Descripción de la Meta Resultado",
+    "Codigo Meta Producto", "Descripción de la Meta Producto", "PPM: Producto", "PS: Producto",
+    "Código Producto DNP", "Descripción Producto DNP", "PPM: Actividad", "PS: Actividad", "Descripción Actividad",
+    "Pos.Pre.", "Vigencia", "Fondo", "Descripción Fondo", "Recurso", "Tipo", "Tipo Descripcion", "Tipo Proyecto",
+    "Tipo Proyecto Descripcion", "Entidad", "Entidad Descripcion", "Participacion Ciudadana", "Meta Actividad",
+    "Gasto Social", "Gasto FBK/GO", "Tipo Actividad", "Pasivo exigible vigencia expirada", " Valor de Actividad",
+    "Politica Publica Linea Estrategica", "Trazador 01", "Trazador 02", "Trazador 03", "Trazador 04", "Trazador 05",
+    "Pres. Part.", "Sector DNP", "SECTOR MGA", "PROGRAMA MGA", "PRODUCTO ASOCIADO A LA MP",
+    "Fecha de importación de los datos", "Centro Gestor de la MP", "PRODUCTO DIRECTO AL PDD?", "ACUMULA",
+    "INDICADOR", "LLAVE DNP - PIIP", "LLAVE DNP - CUIPO", "¿EDT?", "ID MGA", "Objetivo General Proyecto",
+    "Objetivo Específico", "Columna1", "Columna2",
+]
+
+# (dependencia, nombre, PPM proyecto, nombre proyecto, BPIN, MP, PPM actividad, PS actividad, nombre actividad,
+#  vigencia, valor)
+Z023_FILAS = [
+    ("9999", "SRIA DE EJEMPLO", "PI-900001", "Proyecto de ejemplo uno", "2024009990001", "MP9900101019901001",
+     "0000000001", "PI99-000001/1/1/01/01", "Realizar talleres", 2026, 2000000000),
+    ("9999", "SRIA DE EJEMPLO", "PI-900001", "Proyecto de ejemplo uno", "2024009990001", "MP9900101019901001",
+     "0000000002", "PI99-000001/1/1/01/02", "Elaborar material", 2026, 500000000),
+    ("9999", "SRIA DE EJEMPLO", "PI-900001", "Proyecto de ejemplo uno", "2024009990001", "MP9900101029901002",
+     "0000000003", "PI99-000001/1/2/01/03", "Operar la plataforma", 2026, 1200000000),
+    ("9999", "SRIA DE EJEMPLO", "PI-900002", "Proyecto de ejemplo dos", "2024009990002", "MP9900202029902002",
+     "0000000004", "PI99-000002/1/1/01/01", "Contratar consultoría", 2026, 1000000000),
+    # (falta a propósito PI99-000002/1/1/01/02: está en Centralizadas pero no en el Z023)
+    # Misma actividad en una vigencia anterior: debe ignorarse al filtrar por vigencia.
+    ("9999", "SRIA DE EJEMPLO", "PI-900001", "Proyecto de ejemplo uno", "2024009990001", "MP9900101019901001",
+     "0000000005", "PI99-000001/1/1/01/01", "Realizar talleres", 2025, 900000000),
+    # Meta compartida: aporta otra dependencia (con código PS) y una entidad descentralizada (sin código PS).
+    ("9998", "OTRA SRIA DE EJEMPLO", "PI-900003", "Proyecto de otra dependencia", "2025009980003",
+     "MP9900101019901001", "0000000006", "PI98-000003/1/1/01/01", "Apoyar los talleres", 2026, 300000000),
+    ("0099", "ENTIDAD DESCENTRALIZADA DE EJEMPLO", "PI-900004", "Proyecto de la entidad descentralizada", "202400099004",
+     "MP9900101019901001", "0000000007", None, "Capacitar a su personal", 2026, 150000000),
+    # Anomalías: BPIN no válido (7 dígitos) y actividad sin meta de producto.
+    ("9998", "OTRA SRIA DE EJEMPLO", "PI-900005", "Proyecto con BPIN malo", "1234567", "MP9800101019801001",
+     "0000000008", "PI98-000005/1/1/01/01", "Actividad de otra entidad", 2026, 100000000),
+    ("9998", "OTRA SRIA DE EJEMPLO", "PI-900005", "Proyecto con BPIN malo", "2025009980005", None,
+     "0000000009", "PI98-000005/1/1/01/02", "Actividad sin meta", 2026, 50000000),
+]
+
+
+def z023() -> None:
+    """Z023 consolidado ficticio: hoja 'Hoja1' con las 73 columnas reales; solo se llenan las que lee el esquema."""
+    wb = Workbook()
+    ws = _hoja(wb, "Menú")
+    ws["A1"] = "CONSOLIDAR Z023"
+    hoja = wb.create_sheet("Hoja1")
+    hoja.append(Z023_ENCABEZADOS)
+    idx = {h.strip(): i for i, h in enumerate(Z023_ENCABEZADOS)}
+    for dep, nom, ppm, nproy, bpin, mp, ppm_act, ps_act, nact, vig, valor in Z023_FILAS:
+        f = [None] * len(Z023_ENCABEZADOS)
+        f[idx["Dependencia"]], f[idx["Descripción Dependencia"]] = dep, nom
+        f[idx["PPM: Proyecto"]], f[idx["Descripción PROYECTO"]], f[idx["Cod.BPIN DNP"]] = ppm, nproy, bpin
+        f[idx["Codigo Meta Resultado"]] = ("MR" + mp[2:7]) if mp else None
+        f[idx["Codigo Meta Producto"]] = mp
+        f[idx["PS: Producto"]] = ps_act.rsplit("/", 2)[0].replace("/", "") if ps_act else None
+        f[idx["PPM: Actividad"]], f[idx["PS: Actividad"]] = ppm_act, ps_act
+        f[idx["Descripción Actividad"]], f[idx["Vigencia"]] = nact, str(vig)
+        f[idx["Fondo"]], f[idx["Descripción Fondo"]] = "121000", "Ingresos corrientes de Libre Destinación"
+        f[idx["Tipo Actividad"]], f[idx["Valor de Actividad"]] = "Inversión", valor
+        f[idx["Centro Gestor de la MP"]] = "#ERROR!"        # columna de fórmula que a veces llega con error
+        hoja.append(f)
+    _guardar(wb, "ejemplo_Z023.xlsx")
+
+
 if __name__ == "__main__":
+    z023()
     pi_mp_evaplan()
     pi_mr_evaplan()
     centralizadas()

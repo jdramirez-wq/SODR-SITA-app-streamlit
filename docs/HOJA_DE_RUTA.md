@@ -20,8 +20,10 @@ Estructura, `CLAUDE.md`, README, CI, plantillas, reglas de privacidad.
 
 ## Fase 3 — Pulir la primera versión
 - [x] Probada en navegador real con 10 dependencias reales; cifras verificadas de forma independiente (ver análisis 2b)
-- [ ] **Z023 consolidado** subido por sesión (cuarto cuadro opcional; nunca guardado) para mapear los proyectos de otras
-      dependencias que aportan a cada meta. Pendiente: ver una muestra de su estructura (pregunta 4)
+- [x] **Z023 consolidado** subido por sesión (cuarto cuadro opcional; nunca guardado): proyectos que aportan a cada meta
+      (propios y de otras entidades), validaciones y hoja `Aportes_Z023` en el Excel
+- [ ] Probar el cuarto cuadro con el Z023 real (`.xlsx` original con fórmulas calculadas) y revisar tiempos de lectura
+- [ ] Leer el código de producto DNP (`BPIN + Producto MGA`) del Z023 cuando se confirme que llega con valores
 - [x] Avance por registro (no hay forma sencilla de agrupar por actividad)
 - [x] Criterio estricto por defecto para el avance 0 (Dificultades), con casilla flexible
 - [ ] Resolver lo que queda en [PREGUNTAS_ABIERTAS.md](PREGUNTAS_ABIERTAS.md) (reglas del PG, periodo, histórico)

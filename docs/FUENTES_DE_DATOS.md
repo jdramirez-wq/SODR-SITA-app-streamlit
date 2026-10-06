@@ -34,30 +34,40 @@ res = pipeline.ejecutar(archivo_pi, archivo_centralizadas, drive=bytes_del_libro
 Si la estructura de un archivo cambia, el lector lanza `EsquemaError` indicando qué columna falló.
 
 ## Otros insumos (página POAI 2027, aún sin contrato de datos)
-- Cadena de Valor (`.docx`), reporte MGA (`.xml`) y Z023 (`.xlsx`, hoja `Hoja1`). Pendiente analizarlos y
-  añadirlos al diccionario.
+- Cadena de Valor (`.docx`) y reporte MGA (`.xml`). Pendiente analizarlos y añadirlos al diccionario. (El Z023 ya
+  tiene contrato de datos, ver abajo.)
 
-## Z023 consolidado (pendiente de contrato de datos)
-**Qué es** (según las notas del equipo del 1-oct): repositorio maestro curado (> 6000 filas) que unifica los Z023 de SAP
-(módulo PPM) del PDD 2024-2027 y corrige los errores de formulación (metas faltantes, códigos MGA erróneos, área
-funcional). **Es información no pública**: no va al repositorio ni a una carpeta de lectura abierta; se subiría por
-sesión con `st.file_uploader` y se usaría solo en memoria.
+## Z023 consolidado (cuarto cuadro opcional de la página)
+**Qué es:** repositorio maestro curado que unifica los Z023 de SAP (módulo PPM) del PDD 2024-2027 y corrige los errores de
+formulación (metas faltantes, códigos MGA erróneos, área funcional). Libro `Z023_PDD2024-2027_Cons` con 11 hojas; los
+datos están en **`Hoja1`** (73 columnas, una fila por actividad y vigencia; ~6.400 filas en 2024-2026).
+**Es información no pública**: no va al repositorio ni a una carpeta de lectura abierta. Se sube por sesión con
+`st.file_uploader` (cuarto cuadro, `.xlsx` o `.xlsm`) y se usa solo en memoria. El contrato de datos está en
+[DICCIONARIO_DE_DATOS.md](DICCIONARIO_DE_DATOS.md) (esquema `z023`, 17 de las 73 columnas) y el lector es `lectura.leer_z023`.
 
-**Por qué serviría:** liga cada proyecto con su meta de producto y distingue el *Centro Gestor* (dueño del proyecto)
-de la *Dependencia responsable* de la meta. Con eso la página podría mostrar, para cada meta, **qué proyectos de otras
-dependencias le aportan**, que es justo lo que hoy no se ve en un solo Centralizadas (metas compartidas).
+**Qué hace con él la página** (`src/evaplan/aportes.py`):
+- Por meta y vigencia lista los **proyectos que le aportan**, separando los de la propia dependencia de los de otras
+  dependencias y entidades descentralizadas (metas compartidas). Sale en la ficha de la meta, en el Resumen y en la hoja
+  `Aportes_Z023` del Excel.
+- Valida el propio Z023 (MP faltante o mal formada, BPIN no válido) y lo cruza con Centralizadas (actividad ausente del
+  Z023, meta distinta).
 
-**Llaves probables** (a confirmar con la muestra):
-- Código PS de la actividad = `<proyecto>/1/<objetivo específico>/<producto>/<actividad>`, el mismo formato que
-  `Cód. Actividad` de Centralizadas.
-- DNP cruza con `BPIN + Producto MGA`.
-- Los proyectos de entidades descentralizadas solo llegan a PPM (no tienen código PS).
+**Llaves comprobadas con el archivo real** (Hoja1, 6.409 filas):
+- `PPM: Actividad` es única por fila (llave de la tabla); `PS: Actividad` se repite en pocos casos y falta en ~15 %.
+- `PS: Actividad` = `Cód. Actividad` de Centralizadas: las 31 actividades de una dependencia de prueba existen en el Z023.
+- `Dependencia` = `Cod.Entidad` de EVAPLAN (centro gestor del proyecto). Hay 48 distintas: 29 dependencias centrales y
+  19 entidades descentralizadas (códigos `00xx`).
+- Las **entidades descentralizadas no tienen código PS** (el 100 % de sus filas) y **sí aportan a metas** de dependencias
+  centrales (p. ej. de Educación): no se excluyen del cruce, se marcan como "Descentralizada" y "sin código PS".
+- Una meta puede recibir aportes de varios proyectos (147 de 419 metas) y de varias dependencias (39 metas).
+- El código de proyecto de PPM (`PI-102402`) no es el de PS (`PI44-102402`, prefijo de `PS: Actividad`).
+- Varias columnas del libro son **fórmulas** (Centro Gestor de la MP, código de producto DNP, llaves DNP, objetivos…). Al
+  convertirlo a Hoja de Google llegan como `#ERROR!`; en el `.xlsx` original traen valores. Los errores de fórmula se
+  tratan como vacío.
+- `Valor de Actividad` llega numérico en el Excel; en una exportación de texto puede venir `' $  3,200,000 '` (se acepta).
 
-**Para poder hacerlo** hace falta una muestra legible:
-1. Abrir `Z023_PDD2024-2027_Cons.xlsm` y guardar una copia como **`.xlsx`** (sin macros) de nombre
-   `Z023_muestra.xlsx` en la carpeta `Fuentes EVAPLAN`.
-2. Dejar los encabezados y unas 50-100 filas (borrar el resto) de la hoja con los datos consolidados.
-3. Opcional: si hay datos sensibles, cambiar nombres de personas o cifras; solo importa la estructura.
+**Qué falta:** el DNP cruza con `BPIN + Producto MGA`; la columna del código de producto DNP viene de fórmula y no se
+pudo ver con datos reales. Se leerá cuando se confirme que llega con valores en el Excel.
 
 ## Insumos candidatos a leerse desde Drive (en lugar de descarga manual)
 - Plan Indicativo (ya se lee de Drive en la página POAI).

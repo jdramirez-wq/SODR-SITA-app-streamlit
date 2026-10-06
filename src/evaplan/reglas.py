@@ -49,6 +49,14 @@ ETIQUETAS_REGLAS = {
     "ppto_supera_recursos_pi": "Presupuesto definitivo mayor a los recursos del Plan Indicativo",
     "vigencia_cerrada_sin_marca_logro": "Vigencia cerrada sin marca de logro (VAL ALC) en Drive",
     "vigencia_abierta_con_marca_logro": "Vigencia abierta con marca de logro (VAL ALC) en Drive",
+    # --- Z023 consolidado
+    "meta_con_aportes_de_otras_entidades": "Meta compartida: le aportan proyectos de otras entidades (Z023)",
+    "meta_sin_proyectos_en_z023": "Meta sin actividades en el Z023 en la vigencia",
+    "z023_sin_meta_producto": "Actividad del Z023 sin meta de producto",
+    "z023_mp_formato": "Meta de producto del Z023 con formato incorrecto",
+    "z023_bpin_no_valido": "Proyecto del Z023 con BPIN vacío o no válido",
+    "actividad_no_esta_en_z023": "Actividad de Centralizadas que no está en el Z023",
+    "mp_distinta_en_z023": "Actividad con meta de producto distinta en Centralizadas y en el Z023",
 }
 
 

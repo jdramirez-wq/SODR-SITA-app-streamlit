@@ -7,7 +7,8 @@ import unicodedata
 import pandas as pd
 
 # Valores que los sistemas fuente usan como "vacío" en columnas de texto.
-MARCADORES_VACIO = {"", ".", "-", "nan", "none", "null", "n/a", "na"}
+MARCADORES_VACIO = {"", ".", "-", "nan", "none", "null", "n/a", "na",
+                    "#error!", "#n/a", "#ref!", "#value!", "#div/0!", "#name?"}   # errores de fórmula de Excel
 # Valores que significan "sin dato" en columnas numéricas (distintos de 'NP').
 MARCADORES_SIN_DATO_NUM = {"no disponible", "n/d", "nd", "error", "#n/a", "#div/0!", "#ref!", "#value!"}
 
@@ -56,6 +57,8 @@ def _numero(valor, punto_es_miles: bool):
     s = s.replace("%", "")
     if "," in s and "." in s:          # 1.234,56
         s = s.replace(".", "").replace(",", ".")
+    elif punto_es_miles and re.fullmatch(r"-?\d{1,3}(,\d{3}){2,}", s):   # 3,200,000 (miles con coma, p. ej. Z023)
+        s = s.replace(",", "")
     elif "," in s:                      # 1234,56
         s = s.replace(",", ".")
     elif punto_es_miles and re.fullmatch(r"-?\d{1,3}(\.\d{3})+", s):   # 1.234.567 (solo dinero)

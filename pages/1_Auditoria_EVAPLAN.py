@@ -18,6 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from src.evaplan import pipeline, reportes
 from src.evaplan.lectura import EsquemaError
 from src.evaplan.prompts import PERIODOS, generar_prompt_sistema
+from src.evaplan.aportes import ETIQUETAS_APORTES
 from src.evaplan.reglas import etiquetar
 from src.evaplan.seguimiento import ETIQUETAS
 from src.evaplan.version import version_codigo
@@ -74,7 +75,7 @@ st.sidebar.write("✅ Conectado por enlace" if url_drive else "⚠️ Sin enlace
 st.sidebar.caption(f"Versión del código: {version_codigo()}")
 
 # ------------------------------------------------------------------ carga de archivos
-c1, c2, c3 = st.columns(3)
+c1, c2, c3, c4 = st.columns(4)
 with c1:
     st.subheader("1. Plan Indicativo MP")
     f_pi = st.file_uploader("'Informe de Plan Indicativo MP.xlsx' (EVAPLAN)", type=["xlsx"], key="up_pi")
@@ -85,6 +86,11 @@ with c3:
     st.subheader("3. Plan Indicativo (Drive)")
     f_dr = st.file_uploader("Opcional: libro del Plan Indicativo en .xlsx", type=["xlsx"], key="up_dr",
                             help="Solo si no hay enlace configurado o Drive no responde.")
+with c4:
+    st.subheader("4. Z023 consolidado")
+    f_z = st.file_uploader("Opcional: 'Z023_PDD2024-2027_Cons' (.xlsx o .xlsm)", type=["xlsx", "xlsm"], key="up_z023",
+                           help="Muestra qué proyectos de otras entidades aportan a cada meta (metas compartidas). "
+                                "Es información no pública: se usa solo en esta sesión y no se guarda.")
 
 if f_pi and f_ce and st.button("🚀 Procesar", type="primary"):
     try:
@@ -96,7 +102,8 @@ if f_pi and f_ce and st.button("🚀 Procesar", type="primary"):
                 except Exception as e:
                     st.warning(f"No se pudo leer Drive ({type(e).__name__}). Se continúa sin él: no se detectarán "
                                "metas sin reporte.")
-            st.session_state["resultado"] = pipeline.ejecutar(f_pi, f_ce, drive, vigencia_manual or None, criterio_flexible)
+            st.session_state["resultado"] = pipeline.ejecutar(f_pi, f_ce, drive, vigencia_manual or None, criterio_flexible,
+                                                              z023=f_z)
     except EsquemaError as e:
         st.session_state.pop("resultado", None)
         st.error(f"**Un archivo no tiene la estructura esperada.** ¿Subiste cada archivo en su lugar?\n\n{e}")
@@ -161,6 +168,17 @@ with tab_res:
         st.dataframe(etiquetar(res.hallazgos).groupby(["severidad", "hallazgo"]).size().rename("metas").reset_index()
                      .sort_values(["severidad", "metas"], ascending=[True, False]),
                      hide_index=True, use_container_width=True)
+    if res.usa_z023:
+        comp = m[m["n_proyectos_ajenos"] > 0]
+        st.subheader(f"🤝 Metas compartidas según el Z023 ({len(comp)})")
+        st.caption("Metas a las que también aportan proyectos de otras dependencias o entidades descentralizadas. "
+                   "Quien reporta la meta debe conocer ese avance: los avisos de 'sin actividades' o 'avance sin "
+                   "obligaciones' pueden explicarse por esos proyectos.")
+        if len(comp):
+            st.dataframe(comp[["codigo_mp", "n_proyectos_z023", "n_proyectos_ajenos", "aportes_otras_entidades"]]
+                         .rename(columns=ETIQUETAS), hide_index=True, use_container_width=True)
+        else:
+            st.info("Ninguna de las metas cargadas recibe aportes de otras entidades en esta vigencia.")
     st.subheader("Plan de acción vs. meta")
     st.dataframe(
         _vista(m[m["tiene_plan_de_accion"]])[["codigo_mp", "pct_avance_vigencia", "pct_ejecucion_financiera",
@@ -184,6 +202,8 @@ with tab_mat:
     cols = ["codigo_mp", "estado_reporte", "comportamiento", "meta_vigencia", "resultado", "pct_avance_vigencia",
             "valor_proyectado", "pct_avance_pg", "ppto_definitivo", "ppto_obligaciones", "pct_ejecucion_financiera",
             "avance_actividades", "n_alertas"]
+    if res.usa_z023:
+        cols += ["n_proyectos_z023", "n_proyectos_ajenos"]
     st.dataframe(_vista(v)[cols].rename(columns=ETIQUETAS),
                  column_config={ETIQUETAS[c]: x for c, x in {**PCT, **DINERO}.items()},
                  hide_index=True, use_container_width=True)
@@ -201,6 +221,17 @@ with tab_mat:
         d.metric("Proyección de cierre", f"{f['valor_proyectado']:g}" if pd.notna(f["valor_proyectado"]) else "sin dato")
         st.write(f"**Comportamiento:** {f['comportamiento']} · **Proyectos:** {f['proyectos'] if pd.notna(f['proyectos']) else 'sin plan de acción'}")
         st.write(f"**Avance de actividades por proyecto:** {f['avance_por_proyecto'] if pd.notna(f['avance_por_proyecto']) else '—'}")
+        if res.usa_z023:
+            ap = res.aportes[res.aportes["codigo_mp"] == mp]
+            st.markdown(f"**Proyectos que aportan a esta meta (Z023, vigencia {res.vigencia}):**")
+            if ap.empty:
+                st.caption("El Z023 no tiene actividades de ningún proyecto para esta meta en la vigencia.")
+            else:
+                st.dataframe(ap.drop(columns=["codigo_mp", "vigencia"]).rename(columns=ETIQUETAS_APORTES),
+                             column_config={ETIQUETAS_APORTES["valor_actividades"]:
+                                            st.column_config.NumberColumn(format="$ %,.0f")},
+                             hide_index=True, use_container_width=True)
+                st.caption("Las entidades descentralizadas solo llegan a PPM: no tienen código PS ni actividades en EVAPLAN.")
         if f["alertas"]:
             st.warning(f["alertas"])
         for titulo, col in (("Principal logro", "principal_logro"), ("Análisis del logro", "analisis_logro"),
@@ -222,7 +253,7 @@ with tab_cal:
 
 with tab_out:
     d1, d2 = st.columns(2)
-    d1.download_button("📥 Matriz integrada (Excel)", reportes.a_excel(m, res.hallazgos, res.calidad),
+    d1.download_button("📥 Matriz integrada (Excel)", reportes.a_excel(m, res.hallazgos, res.calidad, res.aportes if res.usa_z023 else None),
                        file_name="MP_PI_PA_Integrado.xlsx", use_container_width=True,
                        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
     d2.download_button("📥 Reporte por meta (PDF) para el LLM", reportes.a_pdf(m),

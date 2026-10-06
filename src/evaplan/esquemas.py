@@ -397,4 +397,55 @@ PI_DRIVE_MR = Esquema(
     notas=("Encabezados repetidos (PG, 2024…2027 aparecen dos veces): por eso se lee por posición.",),
 )
 
-ESQUEMAS = {e.nombre: e for e in (PI_MP_EVAPLAN, PI_MR_EVAPLAN, CENTRALIZADAS, PI_DRIVE_MP, PI_DRIVE_MR)}
+# ---------------------------------------------------------------- Z023 consolidado (SAP/PPM)
+Z023 = Esquema(
+    nombre="z023",
+    titulo="Z023 consolidado (SAP · PPM)",
+    descripcion="Actividades de los proyectos de inversión de TODAS las dependencias y entidades descentralizadas, "
+                "con su meta de producto (MP), BPIN, producto MGA y valor. Una fila por actividad y vigencia.",
+    origen_datos="Libro 'Z023_PDD2024-2027_Cons' (hoja 'Hoja1') que consolida el Z023 descargado de SAP. "
+                 "INFORMACIÓN NO PÚBLICA: se sube por sesión (`st.file_uploader`), nunca al repositorio.",
+    fila_encabezado=0,
+    llave=("ppm_actividad",),
+    hoja="Hoja1",
+    campos=(
+        Campo("dependencia", "Dependencia", "codigo",
+              "Código de la dependencia o entidad dueña del proyecto (= `codigo_entidad` de EVAPLAN).",
+              notas="Las entidades descentralizadas llevan códigos '00xx' (observado)."),
+        Campo("nombre_dependencia", "Descripción Dependencia", "texto", "Nombre abreviado de la dependencia."),
+        Campo("proyecto_ppm", "PPM: Proyecto", "codigo", "Código del proyecto en PPM ('PI-999999').",
+              notas="Distinto del código PS del proyecto ('PI99-999999', prefijo de `ps_actividad`)."),
+        Campo("nombre_proyecto", "Descripción PROYECTO", "texto", "Nombre del proyecto."),
+        Campo("bpin", "Cod.BPIN DNP", "codigo", "BPIN del proyecto (válido: empieza por 2 y tiene 12-16 caracteres).",
+              nulo=True, notas="Hay BPIN vacíos o no válidos; el consolidado los completa con una macro."),
+        Campo("codigo_mr", "Codigo Meta Resultado", "codigo", "'MR99001' → se guarda '99001'.", nulo=True),
+        Campo("codigo_mp", "Codigo Meta Producto", "codigo", "Meta de producto a la que aporta la actividad (18 caracteres).",
+              nulo=True, notas="Pocas filas sin MP o con 17 caracteres: se reportan en Calidad de datos."),
+        Campo("ps_producto", "PS: Producto", "codigo", "Código PS del producto ('PI99-9999991101').", nulo=True,
+              notas="Vacío en las entidades descentralizadas (solo llegan a PPM)."),
+        Campo("ppm_actividad", "PPM: Actividad", "codigo", "Código PPM de la actividad. ÚNICO por fila (llave)."),
+        Campo("ps_actividad", "PS: Actividad", "codigo",
+              "Código PS de la actividad: '<proyecto PS>/1/<obj. específico>/<producto>/<actividad>'.", nulo=True,
+              notas="Es el mismo código que 'Cód. Actividad' de Centralizadas. Vacío en descentralizadas y en actividades "
+                    "aún sin código PS. Puede repetirse (una actividad con varias filas)."),
+        Campo("descripcion_actividad", "Descripción Actividad", "texto", "Texto de la actividad.", nulo=True),
+        Campo("vigencia", "Vigencia", "entero", "Año de la fila (2024, 2025, 2026…)."),
+        Campo("codigo_fondo", "Fondo", "codigo", "Código de la fuente de financiación.", nulo=True),
+        Campo("nombre_fondo", "Descripción Fondo", "texto", "Nombre de la fuente de financiación.", nulo=True),
+        Campo("tipo_actividad", "Tipo Actividad", "texto", "Inversión / funcionamiento…", nulo=True),
+        Campo("valor_actividad", "Valor de Actividad", "moneda", "Valor de la actividad en la vigencia (COP).",
+              nulo=True, notas="En el Excel llega numérico; en una exportación de texto puede venir ' $  3,200,000 '."),
+        Campo("centro_gestor_mp", "Centro Gestor de la MP", "codigo",
+              "Centro gestor responsable de la MP (≠ dependencia dueña del proyecto).", nulo=True,
+              notas="Columna calculada por fórmula en el consolidado; puede venir vacía o con error."),
+    ),
+    notas=(
+        "El libro tiene 11 hojas (Menú, Hoja1, TD_Proy, TD, SisPT, PDD, Catálogo, Sectores, ObjGen, ObjEsp, "
+        "Control_Actualizaciones). Solo se lee 'Hoja1' (73 columnas); se usan las columnas listadas aquí.",
+        "Una MP puede recibir aportes de varios proyectos y de varias dependencias (metas compartidas), incluidas "
+        "entidades descentralizadas.",
+        "Una fila con la misma actividad puede repetirse por vigencia: filtrar siempre por `vigencia`.",
+    ),
+)
+
+ESQUEMAS = {e.nombre: e for e in (PI_MP_EVAPLAN, PI_MR_EVAPLAN, CENTRALIZADAS, PI_DRIVE_MP, PI_DRIVE_MR, Z023)}

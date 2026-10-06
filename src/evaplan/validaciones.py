@@ -283,10 +283,47 @@ def marca_logro_vs_vigencia(drive: pd.DataFrame, fuente: str, vigencia: int) -> 
     return _como_df(h)
 
 
+# ------------------------------------------------------------------ Z023 consolidado
+def z023_calidad(z: pd.DataFrame) -> pd.DataFrame:
+    """Integridad propia del Z023: llave de actividad, MP presente y bien formada, BPIN válido (por proyecto)."""
+    h = [_h("llave_unica", "error", "z023", r["ppm_actividad"], "'ppm_actividad' repetido", r["fila_excel"])
+         for _, r in z[z["ppm_actividad"].duplicated(keep=False)].iterrows()]
+    for _, r in z[z["codigo_mp"].isna()].iterrows():
+        h.append(_h("z023_sin_meta_producto", "advertencia", "z023", r["ppm_actividad"],
+                    f"La actividad del proyecto {r['proyecto_ppm']} no tiene meta de producto", r["fila_excel"]))
+    for _, r in z[z["codigo_mp"].notna() & ~z["codigo_mp_valido"].fillna(False).astype(bool)].iterrows():
+        h.append(_h("z023_mp_formato", "advertencia", "z023", r["codigo_mp"],
+                    f"No cumple MP+5+2+2+7 dígitos (actividad {r['ppm_actividad']})", r["fila_excel"]))
+    # BPIN válido: empieza por 2 y tiene 12 a 16 caracteres (criterio de la macro del consolidado). Una alerta por proyecto.
+    malos = z[~z["bpin"].fillna("").map(lambda b: b.startswith("2") and 12 <= len(b) <= 16)]
+    for proy, g in malos.groupby("proyecto_ppm"):
+        bpin = g["bpin"].dropna().iloc[0] if g["bpin"].notna().any() else "vacío"
+        h.append(_h("z023_bpin_no_valido", "advertencia", "z023", proy,
+                    f"BPIN '{bpin}' no válido ({len(g)} fila(s))", int(g["fila_excel"].iloc[0])))
+    return _como_df(h)
+
+
+def centralizadas_vs_z023(centralizadas: pd.DataFrame, z: pd.DataFrame) -> pd.DataFrame:
+    """Cada actividad de Centralizadas debe existir en el Z023 (mismo código PS) y apuntar a la misma meta."""
+    mp_por_actividad = {act: set(g["codigo_mp"].dropna()) for act, g in z[z["ps_actividad"].notna()].groupby("ps_actividad")}
+    h = []
+    for act, g in centralizadas.groupby("codigo_actividad"):
+        if act not in mp_por_actividad:
+            h.append(_h("actividad_no_esta_en_z023", "advertencia", "centralizadas", act,
+                        "El código de la actividad no aparece en el Z023 consolidado (¿consolidado desactualizado?)",
+                        int(g["fila_excel"].iloc[0])))
+        elif mps := set(g["codigo_mp"].dropna()) - mp_por_actividad[act]:
+            h.append(_h("mp_distinta_en_z023", "advertencia", "centralizadas", act,
+                        f"Meta en Centralizadas {sorted(mps)} ≠ meta en el Z023 {sorted(mp_por_actividad[act])}",
+                        int(g["fila_excel"].iloc[0])))
+    return _como_df(h)
+
+
 # ------------------------------------------------------------------ orquestador
 def validar_todo(pi_mp_evaplan: pd.DataFrame | None = None, pi_mr_evaplan: pd.DataFrame | None = None,
                  centralizadas: pd.DataFrame | None = None, drive_mp: pd.DataFrame | None = None,
-                 drive_mr: pd.DataFrame | None = None, vigencia: int | None = None) -> pd.DataFrame:
+                 drive_mr: pd.DataFrame | None = None, vigencia: int | None = None,
+                 z023: pd.DataFrame | None = None) -> pd.DataFrame:
     """Ejecuta todas las reglas aplicables según las fuentes disponibles. Devuelve un DataFrame de hallazgos.
 
     `vigencia`: año en curso. Si no se da, se infiere de los encabezados 'VAL ALC' de Drive.
@@ -324,6 +361,16 @@ def validar_todo(pi_mp_evaplan: pd.DataFrame | None = None, pi_mr_evaplan: pd.Da
                   valores_evaplan_vs_drive(pi_mp_evaplan, drive_mp)]
         if centralizadas is not None:
             r.append(presupuesto_vs_recursos_pi(centralizadas, drive_mp))
+    if z023 is not None:
+        # Igual que Drive: el Z023 trae TODAS las entidades; se revisan las de los archivos cargados (si los hay).
+        entidades = set()
+        for df in (pi_mp_evaplan, centralizadas):
+            if df is not None and "codigo_entidad" in df.columns:
+                entidades |= set(df["codigo_entidad"].dropna())
+        propio = z023[z023["dependencia"].isin(entidades)] if entidades else z023
+        r.append(z023_calidad(propio))
+        if centralizadas is not None:
+            r.append(centralizadas_vs_z023(centralizadas, z023))
     if centralizadas is not None and (pi := pi_mp_evaplan if pi_mp_evaplan is not None else drive_mp) is not None:
         r.append(cobertura_centralizadas_vs_pi(centralizadas, pi))
     r = [x for x in r if len(x)]

@@ -30,10 +30,12 @@ Cuando se resuelva una, se mueve a [REGLAS_DE_NEGOCIO.md](REGLAS_DE_NEGOCIO.md) 
 ## Surgidas al probar con 10 dependencias reales
 3. **Actividades con avance 0 y observación vacía (`.`):** la circular prohíbe los vacíos. ¿Activamos una alerta por
    registro? Hoy solo se alerta si además hay obligaciones.
-4. **Z023 consolidado:** ubicado en la carpeta `Fuentes EVAPLAN` de Drive (`Z023_PDD2024-2027_Cons.xlsm`, 8.8 MB, con
-   macros). El conector de Drive no puede leerlo en ese formato (solo `.xlsx` y Hojas de cálculo de Google; la descarga
-   completa desborda el tamaño de mensaje). **Se necesita una muestra pequeña** (ver `docs/FUENTES_DE_DATOS.md`,
-   sección Z023). Por tratarse de información no pública se subiría por sesión, nunca al repositorio.
+4. ~~**Z023 consolidado:** muestra~~ **Resuelto (6-oct):** se leyó la estructura (Hoja de Google convertida, 6.409 filas) y
+   está en el diccionario. **Decisión tomada con los datos:** las entidades descentralizadas (19, códigos `00xx`) no tienen
+   código PS pero **sí aportan a metas** de dependencias centrales, así que **no se excluyen** del cruce: se muestran como
+   "Descentralizada · sin código PS". Si prefieren excluirlas, es un cambio de una línea.
+   *Para confirmar:* en el `.xlsx` original, ¿las columnas calculadas (Centro Gestor de la MP, código de producto DNP,
+   llaves DNP) traen valores o también quedan vacías?
 
 ## Decisiones de producto
 5. **Prompt:** el bloque opcional "Hechos verificados" queda **activado por defecto** (se puede desmarcar en la barra

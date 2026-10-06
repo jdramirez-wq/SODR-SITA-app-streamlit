@@ -26,7 +26,8 @@ pages/2_POAI_2027.py         (CONGELADA por ahora) Control previo de proyectos: 
                              cruce con PI desde Drive (hoja "MP"), auditoría Z023, prompt IA
 src/evaplan/                 Contrato de datos (SIN Streamlit): esquemas.py (diccionario), limpieza.py,
                              lectura.py (lectores tipados), validaciones.py (reglas y cruces), seguimiento.py
-                             (matriz por meta), reportes.py (Excel/PDF), prompts.py, pipeline.py (orquestador)
+                             (matriz por meta), aportes.py (proyectos por meta desde el Z023), reportes.py (Excel/PDF),
+                             prompts.py, pipeline.py (orquestador)
 scripts/                     generar_diccionario.py (docs desde esquemas), generar_ejemplos.py (datos ficticios)
 tests/                       pytest sobre los ejemplos ficticios de data/ejemplos/
 data/                        Solo ejemplos ficticios (ver data/README.md)
@@ -75,6 +76,9 @@ python scripts/generar_ejemplos.py      # regenera los archivos ficticios
 - **Drive prevalece** sobre el export de EVAPLAN (el operador a veces no lo tiene actualizado).
 - **No agrupar por actividad**: el código de actividad no es confiable (varía a propósito). La unidad es el registro.
 - Quien reporta una meta compartida debe conocer el avance de las otras dependencias: los avisos no se excusan.
+- **Z023 consolidado:** cuarto cuadro opcional (`leer_z023`, hoja `Hoja1`, `.xlsx`/`.xlsm`). Muestra por meta los proyectos que
+  le aportan (propios y de otras entidades, incluidas descentralizadas `00xx`, que no tienen código PS). Llave de la fila =
+  `ppm_actividad`; `ps_actividad` = `Cód. Actividad` de Centralizadas. Los errores de fórmula (`#ERROR!`) son vacío.
 - **Información no pública:** no guardar el Z023 consolidado ni datos similares en el repo ni en carpetas de lectura
   abierta; se subirían por sesión (`st.file_uploader`) y solo se usan en memoria.
 - El indicador "con alertas" cuenta solo advertencias y errores; lo informativo no suma.

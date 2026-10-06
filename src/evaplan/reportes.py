@@ -8,8 +8,9 @@ import pandas as pd
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
 
+from .aportes import ETIQUETAS_APORTES
 from .reglas import etiquetar
-from .seguimiento import COLUMNAS_MATRIZ, ETIQUETAS
+from .seguimiento import COLUMNAS_MATRIZ, COLUMNAS_Z023, ETIQUETAS
 
 _MARGEN_X, _MARGEN_Y = 50, 50
 
@@ -24,17 +25,22 @@ def _pct(v) -> str:
     return _fmt(v * 100 if v is not None and v is not pd.NA and not pd.isna(v) else v, "{:.1f} %")
 
 
-def a_excel(matriz: pd.DataFrame, hallazgos: pd.DataFrame, calidad: pd.DataFrame | None = None) -> bytes:
-    """Libro con: matriz por meta, hallazgos de seguimiento, metas sin reporte y calidad de datos."""
+def a_excel(matriz: pd.DataFrame, hallazgos: pd.DataFrame, calidad: pd.DataFrame | None = None,
+            aportes: pd.DataFrame | None = None) -> bytes:
+    """Libro con: matriz por meta, hallazgos de seguimiento, metas sin reporte, calidad de datos y (si se
+    cargó el Z023) los proyectos que aportan a cada meta."""
     buf = io.BytesIO()
     with pd.ExcelWriter(buf, engine="openpyxl") as w:
-        matriz[COLUMNAS_MATRIZ].rename(columns=ETIQUETAS).to_excel(w, index=False, sheet_name="MP_PI_PA")
+        extra = [c for c in COLUMNAS_Z023 if c in matriz.columns]
+        matriz[COLUMNAS_MATRIZ + extra].rename(columns=ETIQUETAS).to_excel(w, index=False, sheet_name="MP_PI_PA")
         etiquetar(hallazgos).to_excel(w, index=False, sheet_name="Hallazgos")
         matriz.loc[matriz["estado_reporte"] != "Reportada",
                    ["codigo_entidad", "codigo_mp", "descripcion_mp", "comportamiento", "meta_vigencia"]
                    ].rename(columns=ETIQUETAS).to_excel(w, index=False, sheet_name="Sin_reporte")
         if calidad is not None:
             etiquetar(calidad).to_excel(w, index=False, sheet_name="Calidad_de_datos")
+        if aportes is not None:
+            aportes.rename(columns=ETIQUETAS_APORTES).to_excel(w, index=False, sheet_name="Aportes_Z023")
         for ws in w.book.worksheets:           # anchos legibles y encabezado fijo
             ws.freeze_panes = "A2"
             for col in ws.columns:

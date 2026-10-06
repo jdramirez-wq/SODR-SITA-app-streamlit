@@ -13,6 +13,7 @@ import re
 
 import pandas as pd
 
+from . import aportes as A
 from .esquemas import FOCALIZACION
 from .validaciones import ANIOS, COLUMNAS_HALLAZGO, inferir_vigencia
 
@@ -31,7 +32,13 @@ COLUMNAS_MATRIZ = [
     "n_alertas", "alertas",
 ]
 
+COLUMNAS_Z023 = ["n_proyectos_z023", "n_entidades_aportantes", "n_proyectos_ajenos", "valor_z023",
+                 "aportes_otras_entidades"]
+
 ETIQUETAS = {
+    "n_proyectos_z023": "N.º proyectos en Z023", "n_entidades_aportantes": "N.º entidades aportantes (Z023)",
+    "n_proyectos_ajenos": "N.º proyectos de otras entidades (Z023)", "valor_z023": "Valor de actividades Z023 (vigencia)",
+    "aportes_otras_entidades": "Aportes de otras entidades (Z023)",
     "codigo_entidad": "Cód. entidad", "codigo_mp": "Código MP", "descripcion_mp": "Descripción de la meta",
     "mr_del_mp": "Meta de resultado", "comportamiento": "Comportamiento", "unidad_medida": "Unidad",
     "periodicidad": "Periodicidad", "estado_reporte": "Estado del reporte", "vigencia": "Vigencia",
@@ -102,11 +109,13 @@ def _consolidar_plan_de_accion(ce: pd.DataFrame) -> pd.DataFrame:
 
 
 def construir_matriz(pi_mp: pd.DataFrame, centralizadas: pd.DataFrame, drive_mp: pd.DataFrame | None = None,
-                     vigencia: int | None = None, criterio_flexible: bool = False) -> pd.DataFrame:
+                     vigencia: int | None = None, criterio_flexible: bool = False,
+                     z023: pd.DataFrame | None = None) -> pd.DataFrame:
     """Matriz de seguimiento: una fila por meta de producto de la(s) dependencia(s) del export.
 
     Si se da `drive_mp`, el universo de metas es el del Plan Indicativo (así aparecen las metas SIN REPORTE);
-    si no, solo las metas que vienen en el export de EVAPLAN.
+    si no, solo las metas que vienen en el export de EVAPLAN. Si se da `z023`, se agregan las columnas de
+    aportes (proyectos de la propia y de otras entidades que aportan a la meta, `COLUMNAS_Z023`).
     """
     if vigencia is None:
         vigencia = (inferir_vigencia(drive_mp) if drive_mp is not None else None) or max(
@@ -190,6 +199,8 @@ def construir_matriz(pi_mp: pd.DataFrame, centralizadas: pd.DataFrame, drive_mp:
             "menciona_gestion": bool(_RE_GESTION.search(" ".join(textos))),
         })
     m = pd.DataFrame(filas)
+    if z023 is not None:
+        m = m.join(A.resumen_por_meta(A.construir_aportes(z023, m, vigencia), m["codigo_mp"]), on="codigo_mp")
     h = detectar_hallazgos(m, criterio_flexible)
     if len(h):
         # El texto lista primero lo que requiere revisión y después lo informativo; el contador solo cuenta lo primero.
@@ -204,7 +215,7 @@ def construir_matriz(pi_mp: pd.DataFrame, centralizadas: pd.DataFrame, drive_mp:
               "avance_cuatrienio", "pct_avance_pg", "ppto_definitivo", "ppto_obligaciones", "ppto_disponible",
               "pct_ejecucion_financiera", "avance_actividades", "brecha_meta_vs_actividades"):
         m[c] = m[c].astype("Float64")
-    return m[COLUMNAS_MATRIZ]
+    return m[COLUMNAS_MATRIZ + (COLUMNAS_Z023 if z023 is not None else [])]
 
 
 def detectar_hallazgos(m: pd.DataFrame, criterio_flexible: bool = False) -> pd.DataFrame:
@@ -220,6 +231,14 @@ def detectar_hallazgos(m: pd.DataFrame, criterio_flexible: bool = False) -> pd.D
                     "fila_excel": None, "detalle": detalle})
 
     for _, f in m.iterrows():
+        if "n_proyectos_z023" in m.columns:      # solo si se cargó el Z023
+            if f["n_proyectos_z023"] == 0:
+                add("meta_sin_proyectos_en_z023", "info", f,
+                    f"El Z023 no tiene actividades de ningún proyecto para esta meta en {f['vigencia']}")
+            elif not _na(f["aportes_otras_entidades"]):
+                add("meta_con_aportes_de_otras_entidades", "info", f,
+                    f"Meta compartida: según el Z023 también le aportan {f['n_proyectos_ajenos']} proyecto(s) de otras "
+                    f"entidades ({f['aportes_otras_entidades']}). Quien reporta debe conocer ese avance")
         if f["estado_reporte"] != "Reportada":
             add("sin_reporte", "advertencia", f,
                 "La dependencia no aparece en el export de EVAPLAN para esta meta (probable: no reportó)")

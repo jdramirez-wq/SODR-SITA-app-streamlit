@@ -22,6 +22,21 @@ Las reglas viven en `src/evaplan/validaciones.py` y se prueban con los ejemplos 
 | C4 | Metas del PI sin actividades en Centralizadas | — | info | `cobertura_centralizadas_vs_pi` |
 | C5 | PG y valores 2024-2027 (con `NP`) del export = bloque vigente de Drive | ✅ | advertencia | `valores_evaplan_vs_drive` |
 
+## Z023 consolidado (solo si se carga el cuarto cuadro)
+| Id | Regla | Estado | Severidad | Función |
+|---|---|---|---|---|
+| Z1 | `PPM: Actividad` única | ✅ | error | `z023_calidad` (`llave_unica`) |
+| Z2 | Toda actividad tiene meta de producto de 18 caracteres | ✅ | advertencia | `z023_calidad` |
+| Z3 | BPIN válido: empieza por 2 y tiene 12-16 caracteres (criterio de la macro del consolidado); una alerta por proyecto | ✅ | advertencia | `z023_calidad` |
+| Z4 | Toda actividad de Centralizadas existe en el Z023 (mismo código PS) | ✅ | advertencia | `centralizadas_vs_z023` |
+| Z5 | La meta de la actividad en Centralizadas = la del Z023 | ✅ | advertencia | `centralizadas_vs_z023` |
+| Z6 | Meta compartida: le aportan proyectos de otras dependencias o entidades descentralizadas | — | info | `meta_con_aportes_de_otras_entidades` |
+| Z7 | Meta sin actividades en el Z023 en la vigencia | — | info | `meta_sin_proyectos_en_z023` |
+
+Las reglas Z1-Z3 solo revisan las filas de las dependencias cargadas (el Z023 trae todas). Z6 y Z7 son hechos para quien
+revisa: la presencia de aportes ajenos **no excusa** el aviso de "sin actividades" o "avance sin obligaciones" (quien
+reporta debe conocer ese avance).
+
 ## Indicadores
 | Id | Regla | Estado | Severidad | Función |
 |---|---|---|---|---|

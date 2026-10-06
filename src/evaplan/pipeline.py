@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
+from . import aportes as A
 from . import lectura as L
 from . import seguimiento as S
 from . import validaciones as V
@@ -22,13 +23,16 @@ class Resultado:
     resumen: dict
     avisos: list[str] = field(default_factory=list)
     usa_drive: bool = False
+    usa_z023: bool = False
+    aportes: pd.DataFrame = field(default_factory=lambda: pd.DataFrame(columns=A.COLUMNAS_APORTES))
 
 
 def ejecutar(pi_mp_evaplan, centralizadas, drive=None, vigencia: int | None = None,
-             criterio_flexible: bool = False) -> Resultado:
+             criterio_flexible: bool = False, z023=None) -> Resultado:
     """`drive`: ruta, URL de exportación xlsx o archivo del Plan Indicativo (hoja MP). Opcional.
 
     Sin Drive el seguimiento funciona, pero no puede detectar metas sin reporte ni validar contra la programación.
+    `z023`: Z023 consolidado (opcional, información no pública: solo en memoria). Agrega los aportes por meta.
     """
     avisos: list[str] = []
     pi = L.leer_pi_mp_evaplan(pi_mp_evaplan)
@@ -44,11 +48,14 @@ def ejecutar(pi_mp_evaplan, centralizadas, drive=None, vigencia: int | None = No
                           "Se continúa solo con los archivos de EVAPLAN.")
     if dr is not None and vigencia is None:
         vigencia = V.inferir_vigencia(dr)
-    matriz = S.construir_matriz(pi, ce, dr, vigencia, criterio_flexible)
+    zz = L.leer_z023(z023) if z023 is not None else None
+    matriz = S.construir_matriz(pi, ce, dr, vigencia, criterio_flexible, z023=zz)
     vigencia = int(matriz["vigencia"].iloc[0]) if len(matriz) else (vigencia or 0)
-    calidad = V.validar_todo(pi_mp_evaplan=pi, centralizadas=ce, drive_mp=dr, vigencia=vigencia)
+    calidad = V.validar_todo(pi_mp_evaplan=pi, centralizadas=ce, drive_mp=dr, vigencia=vigencia, z023=zz)
+    aportes = A.construir_aportes(zz, matriz, vigencia) if zz is not None else None
+    extra = {"usa_z023": True, "aportes": aportes} if aportes is not None else {}
     return Resultado(vigencia=vigencia, matriz=matriz, hallazgos=S.detectar_hallazgos(matriz, criterio_flexible), calidad=calidad,
-                     resumen=S.resumen(matriz), avisos=avisos, usa_drive=dr is not None)
+                     resumen=S.resumen(matriz), avisos=avisos, usa_drive=dr is not None, **extra)
 
 
 __all__ = ["Resultado", "ejecutar"]

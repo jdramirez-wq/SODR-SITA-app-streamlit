@@ -17,6 +17,7 @@ from .esquemas import (
     PI_DRIVE_MR,
     PI_MP_EVAPLAN,
     PI_MR_EVAPLAN,
+    Z023,
     Campo,
     Esquema,
 )
@@ -174,3 +175,11 @@ def leer_pi_drive_mp(origen) -> pd.DataFrame:
 
 def leer_pi_drive_mr(origen) -> pd.DataFrame:
     return leer(origen, PI_DRIVE_MR)
+
+
+def leer_z023(origen) -> pd.DataFrame:
+    """Z023 consolidado (hoja 'Hoja1'). Agrega `codigo_proyecto_ps` (prefijo de `ps_actividad`) y las partes del MP."""
+    df = enriquecer_codigo_mp(leer(origen, Z023))
+    df["codigo_proyecto_ps"] = df["ps_actividad"].map(
+        lambda c: c.split("/")[0] if isinstance(c, str) and "/" in c else pd.NA).astype("string")
+    return df
