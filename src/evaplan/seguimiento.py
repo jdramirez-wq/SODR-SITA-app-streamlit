@@ -85,7 +85,11 @@ def _consolidar_plan_de_accion(ce: pd.DataFrame) -> pd.DataFrame:
     """Una fila por meta de producto con presupuesto sumado y avance de actividades (global y por proyecto)."""
     filas = []
     for mp, g in ce.groupby("codigo_mp"):
-        por_proyecto = g.groupby("codigo_proyecto")["avance_actividad_pct"].mean()
+        # % de avance vacío con cantidad programada = sin ejecución reportada: cuenta como 0, igual que EVAPLAN con las
+        # centralizadas (cantidad ejecutada vacía -> 0 %). Sin cantidad programada no hay avance que medir (queda vacío).
+        avance = g["avance_actividad_pct"].where(
+            g["avance_actividad_pct"].notna() | (g["cant_programada_vigencia"].fillna(0) <= 0), 0.0)
+        por_proyecto = avance.groupby(g["codigo_proyecto"]).mean()
         proyectos = (g[["codigo_proyecto", "nombre_proyecto"]].drop_duplicates()
                      .apply(lambda r: f"{r['codigo_proyecto']} - {r['nombre_proyecto']}", axis=1))
         # Registros con obligaciones, sin avance físico y con cantidad programada en la vigencia
@@ -100,7 +104,7 @@ def _consolidar_plan_de_accion(ce: pd.DataFrame) -> pd.DataFrame:
             "ppto_obligaciones": g["ppto_obligaciones"].sum(min_count=1),
             "ppto_disponible": g["ppto_disponible"].sum(min_count=1),
             # fracción 0-1, como la usa el prompt del auditor (promedio por registro, como la página original)
-            "avance_actividades": g["avance_actividad_pct"].mean() / 100,
+            "avance_actividades": avance.mean() / 100,
             "avance_por_proyecto": " | ".join(f"{p}: {v:.1f} %" for p, v in por_proyecto.items() if not _na(v)),
             "n_registros_con_obligaciones_sin_avance": len(sin_avance),
             "n_registros_sin_avance_sin_observacion": int(sin_avance["observacion"].isna().sum()),

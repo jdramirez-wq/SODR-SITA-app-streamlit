@@ -39,6 +39,7 @@ ETIQUETAS_REGLAS = {
     "obligaciones_mayores_definitivo": "Obligaciones mayores al presupuesto definitivo",
     "disponible_excede_saldo": "Disponible mayor al saldo",
     "sin_programacion_fisica": "Registro sin cantidad programada en la vigencia",
+    "avance_vacio_con_programacion": "Registros con cantidad programada y % de avance vacío (cuentan como 0 %)",
     "avance_no_coincide": "% de avance no coincide con ejecutada/programada",
     "avance_supera_100": "Avance físico mayor a 100 %",
     "financiero_sin_fisico": "Obligaciones sin avance físico y sin observación",

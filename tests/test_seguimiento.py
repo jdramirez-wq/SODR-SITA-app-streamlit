@@ -8,6 +8,7 @@ from openpyxl import load_workbook
 from src.evaplan import lectura as L
 from src.evaplan import pipeline, reportes
 from src.evaplan import seguimiento as S
+from src.evaplan import validaciones as V
 
 EJ = Path(__file__).resolve().parent.parent / "data" / "ejemplos"
 PI, CE, DR = (EJ / "ejemplo_PI_MP_evaplan.xlsx", EJ / "ejemplo_Centralizadas.xlsx", EJ / "ejemplo_PI_Drive.xlsx")
@@ -246,3 +247,17 @@ def test_toda_regla_emitida_tiene_nombre_legible(datos):
     emitidas = set(r.hallazgos["regla"]) | set(r.calidad["regla"])
     assert emitidas <= set(ETIQUETAS_REGLAS), emitidas - set(ETIQUETAS_REGLAS)
     assert "hallazgo" in etiquetar(r.hallazgos).columns and V is not None
+
+
+def test_avance_vacio_con_cantidad_programada_cuenta_como_cero_en_el_promedio():
+    ce = pd.DataFrame({
+        "codigo_mp": ["MP1"] * 4, "codigo_proyecto": ["P1", "P1", "P1", "P2"], "nombre_proyecto": ["a"] * 4,
+        "avance_actividad_pct": [100.0, pd.NA, pd.NA, pd.NA], "cant_programada_vigencia": [1.0, 5.0, 0.0, pd.NA],
+        "ppto_definitivo": [10.0] * 4, "ppto_obligaciones": [0.0] * 4, "ppto_disponible": [10.0] * 4,
+        "observacion": [pd.NA] * 4, "fila_excel": [3, 4, 5, 6]})
+    p = S._consolidar_plan_de_accion(ce).iloc[0]
+    # P1: 100 y (vacío con programada 5 -> 0); el vacío con programada 0 no cuenta -> (100+0)/2 = 50 %; P2 sin dato
+    assert p["avance_actividades"] == 0.5
+    assert p["avance_por_proyecto"] == "P1: 50.0 %"
+    q = V.avance_vacio_con_programacion(ce)
+    assert list(q["llave"]) == ["MP1"] and "1 de 4" in q.loc[0, "detalle"] and q.loc[0, "severidad"] == "info"

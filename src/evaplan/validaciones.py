@@ -227,6 +227,16 @@ def ejecucion_financiera_vs_fisica(ce: pd.DataFrame) -> pd.DataFrame:
     return _como_df(h)
 
 
+def avance_vacio_con_programacion(ce: pd.DataFrame) -> pd.DataFrame:
+    """Registros con cantidad programada y % de avance vacío: en el promedio se cuentan como 0 (una alerta por meta)."""
+    vacio = ce[ce["avance_actividad_pct"].isna() & (ce["cant_programada_vigencia"].fillna(0) > 0)]
+    return _como_df([
+        _h("avance_vacio_con_programacion", "info", "centralizadas", mp,
+           f"{len(g)} de {int((ce['codigo_mp'] == mp).sum())} registro(s) tienen cantidad programada y el % de avance "
+           "vacío: en el promedio de actividades se cuentan como 0 %", int(g["fila_excel"].iloc[0]))
+        for mp, g in vacio.groupby("codigo_mp")])
+
+
 def integridad_centralizadas(ce: pd.DataFrame) -> pd.DataFrame:
     h = []
     for proyecto, g in ce.groupby("codigo_proyecto"):
@@ -356,7 +366,8 @@ def validar_todo(pi_mp_evaplan: pd.DataFrame | None = None, pi_mr_evaplan: pd.Da
     if centralizadas is not None:
         r += [llave_unica(centralizadas, "id_registro", "centralizadas"),
               codigo_mp_coherente(centralizadas, "centralizadas"), presupuesto_invariantes(centralizadas),
-              avance_consistente(centralizadas), ejecucion_financiera_vs_fisica(centralizadas),
+              avance_consistente(centralizadas), avance_vacio_con_programacion(centralizadas),
+              ejecucion_financiera_vs_fisica(centralizadas),
               integridad_centralizadas(centralizadas)]
     if drive_mp is not None:
         # El libro de Drive trae TODAS las entidades: se revisan solo las de los archivos cargados (si los hay).
