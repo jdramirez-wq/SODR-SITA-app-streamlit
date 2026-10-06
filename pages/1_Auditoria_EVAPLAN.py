@@ -174,6 +174,11 @@ with tab_res:
         st.caption("Metas a las que también aportan proyectos de otras dependencias o entidades descentralizadas. "
                    "Quien reporta la meta debe conocer ese avance: los avisos de 'sin actividades' o 'avance sin "
                    "obligaciones' pueden explicarse por esos proyectos.")
+        filas_z = res.z023_filas_por_vigencia
+        st.caption(f"Se revisan solo las filas del Z023 de la **vigencia {res.vigencia}**: {filas_z.get(res.vigencia, 0)} de "
+                   f"{sum(filas_z.values())} (filas por vigencia en el archivo: "
+                   + ", ".join(f"{a}: {n}" for a, n in filas_z.items()) + "). Si cambiaste el archivo, vuelve a pulsar "
+                   "**Procesar** para recalcular.")
         if len(comp):
             st.dataframe(comp[["codigo_mp", "n_proyectos_z023", "n_proyectos_ajenos", "aportes_otras_entidades"]]
                          .rename(columns=ETIQUETAS), hide_index=True, use_container_width=True)

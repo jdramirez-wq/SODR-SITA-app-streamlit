@@ -116,3 +116,8 @@ def test_excel_incluye_hoja_de_aportes_solo_con_z023(res):
     assert "Aportes_Z023" in con.sheetnames
     sin = load_workbook(io.BytesIO(reportes.a_excel(res.matriz, res.hallazgos, res.calidad)))
     assert "Aportes_Z023" not in sin.sheetnames
+
+
+def test_resultado_informa_las_filas_del_z023_por_vigencia(res):
+    assert res.z023_filas_por_vigencia == {2025: 1, 2026: 8}
+    assert pipeline.ejecutar(PI, CE, DR).z023_filas_por_vigencia == {}

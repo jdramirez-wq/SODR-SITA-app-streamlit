@@ -24,6 +24,7 @@ class Resultado:
     avisos: list[str] = field(default_factory=list)
     usa_drive: bool = False
     usa_z023: bool = False
+    z023_filas_por_vigencia: dict = field(default_factory=dict)   # {año: n.º de filas} del Z023 cargado
     aportes: pd.DataFrame = field(default_factory=lambda: pd.DataFrame(columns=A.COLUMNAS_APORTES))
 
 
@@ -53,7 +54,9 @@ def ejecutar(pi_mp_evaplan, centralizadas, drive=None, vigencia: int | None = No
     vigencia = int(matriz["vigencia"].iloc[0]) if len(matriz) else (vigencia or 0)
     calidad = V.validar_todo(pi_mp_evaplan=pi, centralizadas=ce, drive_mp=dr, vigencia=vigencia, z023=zz)
     aportes = A.construir_aportes(zz, matriz, vigencia) if zz is not None else None
-    extra = {"usa_z023": True, "aportes": aportes} if aportes is not None else {}
+    extra = ({"usa_z023": True, "aportes": aportes,
+              "z023_filas_por_vigencia": {int(a): int(n) for a, n in zz["vigencia"].value_counts().sort_index().items()}}
+             if aportes is not None else {})
     return Resultado(vigencia=vigencia, matriz=matriz, hallazgos=S.detectar_hallazgos(matriz, criterio_flexible), calidad=calidad,
                      resumen=S.resumen(matriz), avisos=avisos, usa_drive=dr is not None, **extra)
 
