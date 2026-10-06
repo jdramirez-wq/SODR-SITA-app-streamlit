@@ -96,8 +96,9 @@ def lista_y_ficha(res) -> None:
     conteo = contar_filtros(m)
     st.markdown("### Metas")
     etiquetas = {f"{f} · {conteo[f]}": f for f in FILTROS if f in conteo}
-    elegido = st.segmented_control("Mostrar", list(etiquetas), default=list(etiquetas)[0],
-                                   label_visibility="collapsed", key="filtro_metas")
+    if st.session_state.get("filtro_metas") not in etiquetas:     # primera vez, o un filtro de otro resultado
+        st.session_state["filtro_metas"] = list(etiquetas)[0]
+    elegido = st.segmented_control("Mostrar", list(etiquetas), label_visibility="collapsed", key="filtro_metas")
     filtro = etiquetas.get(elegido, "Todas")
     c2, c3 = st.columns([1.4, 1], vertical_alignment="center")
     texto = c2.text_input("Buscar", placeholder="Buscar código o descripción", label_visibility="collapsed",

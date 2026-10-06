@@ -111,6 +111,10 @@ python scripts/generar_ejemplos.py      # regenera los archivos ficticios
 - **Interfaz:** lo urgente primero y lo informativo a un clic (expanders cerrados). Una sola pantalla de resultados (cifras →
   lista de metas → ficha), sin pestañas obligatorias; detalle técnico plegado. En Markdown escapar `$` (si no, se vuelve fórmula).
 - Cachear lecturas pesadas con `st.cache_data`; estado entre interacciones con `st.session_state`.
+- **F5 no borra:** `interfaz/memoria.py` copia lo listado en `MEMORIA` (resultados y configuración) a la memoria del
+  servidor bajo una clave aleatoria en la dirección (`?sesion=`). Vence a las 8 h sin uso o al reiniciar la app; "Borrar
+  resultados" la elimina. Nunca en disco. Los controles que se recuperan usan `key=` y valor inicial con `setdefault`
+  (no `value=`). POAI (congelada) aún no la usa.
 - Dependencias nuevas: añadir a `requirements.txt` y justificarlas en el PR.
 
 ## Deuda técnica conocida
