@@ -24,6 +24,7 @@ class Resultado:
     resumen: dict
     avisos: list[str] = field(default_factory=list)
     usa_drive: bool = False
+    entidad: str = ""                       # '1216 · NOMBRE' de la(s) entidad(es) del export
     usa_z023: bool = False
     es_descentralizada: bool = False      # ¿la entidad del export es descentralizada? (certificados de cierre)
     z023_filas_por_vigencia: dict = field(default_factory=dict)   # {año: n.º de filas} del Z023 cargado
@@ -52,6 +53,8 @@ def ejecutar(pi_mp_evaplan, centralizadas, drive=None, vigencia: int | None = No
                           "Se continúa solo con los archivos de EVAPLAN.")
     if dr is not None and vigencia is None:
         vigencia = V.inferir_vigencia(dr)
+    entidad = " / ".join(dict.fromkeys(f"{c} · {n}" for c, n in zip(pi["codigo_entidad"], pi["nombre_entidad"])
+                                       if pd.notna(c)))
     zz = L.leer_z023(z023) if z023 is not None else None
     matriz = S.construir_matriz(pi, ce, dr, vigencia, criterio_flexible, z023=zz)
     vigencia = int(matriz["vigencia"].iloc[0]) if len(matriz) else (vigencia or 0)
@@ -62,7 +65,7 @@ def ejecutar(pi_mp_evaplan, centralizadas, drive=None, vigencia: int | None = No
               "z023_filas_por_vigencia": {int(a): int(n) for a, n in zz["vigencia"].value_counts().sort_index().items()}}
              if aportes is not None else {})
     return Resultado(vigencia=vigencia, matriz=matriz, hallazgos=S.detectar_hallazgos(matriz, criterio_flexible), calidad=calidad,
-                     resumen=S.resumen(matriz), avisos=avisos, usa_drive=dr is not None,
+                     resumen=S.resumen(matriz), avisos=avisos, usa_drive=dr is not None, entidad=entidad,
                      es_descentralizada=R.detectar_descentralizada(
                          ce, set(matriz["codigo_entidad"].dropna()) | set(ce["codigo_entidad"].dropna()), equivalencias),
                      **extra)

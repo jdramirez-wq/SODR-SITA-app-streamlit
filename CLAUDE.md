@@ -24,6 +24,8 @@ pages/1_Auditoria_EVAPLAN.py SEGUIMIENTO EVAPLAN (página en foco): cruza Plan I
                              delgada sobre src/evaplan/pipeline.py
 pages/2_POAI_2027.py         (CONGELADA por ahora) Control previo de proyectos: Cadena de Valor (.docx), MGA (XML),
                              cruce con PI desde Drive (hoja "MP"), auditoría Z023, prompt IA
+interfaz/                    Componentes visuales de Streamlit: estilos.py (paleta, tarjetas) y seguimiento.py (vistas de la
+                             página). Solo dibujan; qué se muestra lo decide src/evaplan/vista.py (probado). Tema en .streamlit/config.toml
 src/evaplan/                 Contrato de datos (SIN Streamlit): esquemas.py (diccionario), limpieza.py,
                              lectura.py (lectores tipados), validaciones.py (reglas y cruces), seguimiento.py
                              (matriz por meta), aportes.py (proyectos por meta desde el Z023), recordatorios.py (cierre de año),
@@ -93,6 +95,8 @@ python scripts/generar_ejemplos.py      # regenera los archivos ficticios
   con cantidad programada cuenta como 0. Sumas totalmente vacías = "sin dato" (no 0).
 - Llave de entidad = **código** (9999), nunca el nombre. Llave de meta: `codigo_mp` (18 caracteres) /
   `codigo_mr` (5 dígitos). Para seguimiento comparar contra el bloque **vigente** de Drive, no el original.
+- **Interfaz:** lo urgente primero y lo informativo a un clic (expanders cerrados). Una sola pantalla de resultados (cifras →
+  lista de metas → ficha), sin pestañas obligatorias; detalle técnico plegado. En Markdown escapar `$` (si no, se vuelve fórmula).
 - Cachear lecturas pesadas con `st.cache_data`; estado entre interacciones con `st.session_state`.
 - Dependencias nuevas: añadir a `requirements.txt` y justificarlas en el PR.
 

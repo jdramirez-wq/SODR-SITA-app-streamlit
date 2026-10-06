@@ -1,6 +1,7 @@
 """Seguimiento EVAPLAN: cruza lo reportado por la dependencia con el Plan Indicativo (Drive) y el Plan de Acción.
 
-La lógica vive en src/evaplan (probada con archivos de ejemplo). Esta página solo recoge archivos y dibuja.
+La lógica vive en src/evaplan (probada con archivos de ejemplo) y las vistas en interfaz/. Esta página solo
+orquesta: recoge archivos, procesa y muestra.
 """
 import io
 import os
@@ -8,37 +9,21 @@ import sys
 import urllib.request
 from pathlib import Path
 
-import pandas as pd
 import streamlit as st
 
 # Raíz del repositorio en sys.path: así `from src...` funciona aunque Streamlit se lance con esta página como
 # archivo principal o desde otra carpeta (si no, falla con "No module named 'src'").
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from src.evaplan import pipeline, reportes
+from interfaz import estilos, seguimiento as vista
+from src.evaplan import pipeline
 from src.evaplan.lectura import EsquemaError
-from src.evaplan.prompts import PERIODOS, generar_prompt_sistema
-from src.evaplan.aportes import ETIQUETAS_APORTES
+from src.evaplan.prompts import PERIODOS
 from src.evaplan.recordatorios import recordatorios_cierre
-from src.evaplan.reglas import etiquetar
-from src.evaplan.seguimiento import ETIQUETAS
 from src.evaplan.version import version_codigo
 
 st.set_page_config(page_title="Seguimiento EVAPLAN", page_icon="📊", layout="wide")
-st.markdown(
-    """<style>
-    div[data-testid="stHeader"] {background-color: transparent;}
-    footer {visibility: hidden;}
-    </style>""",
-    unsafe_allow_html=True,
-)
-
-st.title("📊 Seguimiento EVAPLAN al Plan de Desarrollo")
-st.write(
-    "Sube las descargas de **una dependencia** desde EVAPLAN. La herramienta las cruza con el Plan Indicativo "
-    "en Drive, calcula los hechos objetivos (avance, ejecución financiera, metas sin reporte) y deja listo el "
-    "material para el análisis. **No emite semáforos**: el juicio sigue siendo de quien revisa."
-)
+estilos.aplicar_estilos()
 
 
 # ------------------------------------------------------------------ Drive
@@ -57,43 +42,61 @@ def _descargar_drive(url: str) -> bytes:
         return r.read()
 
 
-# ------------------------------------------------------------------ barra lateral
-st.sidebar.header("⚙️ Configuración")
-periodo = st.sidebar.selectbox("Periodo de revisión (para el prompt):", PERIODOS)
-vigencia_manual = st.sidebar.number_input(
-    "Vigencia (0 = detectar automáticamente)", min_value=0, max_value=2027, value=0, step=1,
-    help="Se detecta con los encabezados 'VAL ALC' del Plan Indicativo en Drive: la vigencia en curso es el "
-         "primer año que aún no está marcado como logro.")
-con_hechos = st.sidebar.checkbox("Incluir 'hechos verificados' en el prompt", value=True,
-                                 help="Indica al LLM que las cifras ya fueron calculadas por código.")
-criterio_flexible = st.sidebar.checkbox(
-    "Criterio flexible: aceptar también el Análisis del logro como justificación de un avance 0", value=False,
-    help="Por defecto (lineamiento del equipo) un avance 0 se justifica en Dificultades. Marca esta casilla solo si el "
-         "equipo decide ser flexible.")
-url_drive = _url_drive()
-st.sidebar.markdown("**Plan Indicativo (Drive)**")
-st.sidebar.write("✅ Conectado por enlace" if url_drive else "⚠️ Sin enlace configurado (secreto `URL_DRIVE_PLAN_INDICATIVO`)")
+# ------------------------------------------------------------------ barra lateral (solo lo esencial)
+st.sidebar.markdown("### Revisión")
+periodo = st.sidebar.selectbox(
+    "Periodo de revisión", PERIODOS,
+    help="Ajusta el texto del prompt. En los periodos de cierre aparecen además los recordatorios de certificados.")
+with st.sidebar.expander("Opciones avanzadas"):
+    vigencia_manual = st.number_input(
+        "Vigencia (0 = detectar sola)", min_value=0, max_value=2027, value=0, step=1,
+        help="Se detecta con los encabezados 'VAL ALC' del Plan Indicativo en Drive: la vigencia en curso es el "
+             "primer año que aún no está marcado como logro.")
+    con_hechos = st.checkbox("Decirle a la IA que las cifras ya están verificadas", value=True,
+                             help="Agrega al prompt el bloque de 'hechos verificados'.")
+    criterio_flexible = st.checkbox(
+        "Criterio flexible para el avance 0", value=False,
+        help="Por defecto (lineamiento del equipo) un avance 0 se justifica en Dificultades. Marca esta casilla solo "
+             "si el equipo decide aceptar también el Análisis del logro.")
 st.sidebar.caption(f"Versión del código: {version_codigo()}")
+url_drive = _url_drive()
+
+res = st.session_state.get("resultado")
+
+# ------------------------------------------------------------------ encabezado
+estilos.encabezado(
+    "Seguimiento EVAPLAN",
+    "Cruza lo que reportó una dependencia en EVAPLAN con el Plan Indicativo y su Plan de Acción, y deja listos los "
+    "hechos para el análisis. No emite semáforos: el juicio es de quien revisa.",
+    entidad=res.entidad if res is not None else "")
+if res is None:
+    estilos.pasos([("Descarga de EVAPLAN", "Dos archivos de la dependencia: Plan Indicativo MP y Plan de Acción."),
+                   ("Cárgalos y procesa", "El Plan Indicativo de Drive se lee solo si está configurado."),
+                   ("Revisa y descarga", "Metas con alertas primero, Excel, PDF y prompt para la IA.")])
 
 # ------------------------------------------------------------------ carga de archivos
-c1, c2, c3, c4 = st.columns(4)
-with c1:
-    st.subheader("1. Plan Indicativo MP")
-    f_pi = st.file_uploader("'Informe de Plan Indicativo MP.xlsx' (EVAPLAN)", type=["xlsx"], key="up_pi")
-with c2:
-    st.subheader("2. Plan de Acción")
-    f_ce = st.file_uploader("'Centralizadas.xlsx' o 'Descentralizadas.xlsx' (EVAPLAN)", type=["xlsx"], key="up_ce")
-with c3:
-    st.subheader("3. Plan Indicativo (Drive)")
-    f_dr = st.file_uploader("Opcional: libro del Plan Indicativo en .xlsx", type=["xlsx"], key="up_dr",
-                            help="Solo si no hay enlace configurado o Drive no responde.")
-with c4:
-    st.subheader("4. Z023 consolidado")
-    f_z = st.file_uploader("Opcional: 'Z023_PDD2024-2027_Cons' (.xlsx o .xlsm)", type=["xlsx", "xlsm"], key="up_z023",
-                           help="Muestra qué proyectos de otras entidades aportan a cada meta (metas compartidas). "
-                                "Es información no pública: se usa solo en esta sesión y no se guarda.")
+with st.expander("📁 Archivos de la dependencia", expanded=res is None):
+    c1, c2 = st.columns(2)
+    f_pi = c1.file_uploader("Plan Indicativo MP", type=["xlsx"], key="up_pi",
+                            help="'Informe de Plan Indicativo MP.xlsx', descargado de EVAPLAN")
+    f_ce = c2.file_uploader("Plan de Acción", type=["xlsx"], key="up_ce",
+                            help="'Centralizadas.xlsx' o 'Descentralizadas.xlsx', descargado de EVAPLAN")
+    f_dr = f_z = None
+    if st.checkbox("Agregar fuentes opcionales (Plan Indicativo de Drive, Z023)", key="ver_opcionales"):
+        o1, o2 = st.columns(2)
+        f_dr = o1.file_uploader("Plan Indicativo de Drive (.xlsx)", type=["xlsx"], key="up_dr",
+                                help="Solo si no hay enlace configurado o Drive no responde.")
+        f_z = o2.file_uploader("Z023 consolidado (.xlsx o .xlsm)", type=["xlsx", "xlsm"], key="up_z023",
+                               help="Muestra qué proyectos de otras entidades aportan a cada meta. Es información no "
+                                    "pública: se usa solo en esta sesión y no se guarda.")
+    listo = bool(f_pi and f_ce)
+    b1, b2 = st.columns([1, 3], vertical_alignment="center")
+    procesar = b1.button("Procesar", type="primary", disabled=not listo, use_container_width=True)
+    b2.caption(("✅ Plan Indicativo de Drive conectado por enlace" if url_drive else
+                "⚠️ Sin enlace al Plan Indicativo de Drive: no se detectarán las metas sin reporte")
+               + ("" if listo else " · Sube los dos archivos de EVAPLAN para continuar"))
 
-if f_pi and f_ce and st.button("🚀 Procesar", type="primary"):
+if procesar:
     try:
         with st.spinner("Cruzando EVAPLAN, Plan Indicativo y Plan de Acción…"):
             drive = f_dr
@@ -103,8 +106,9 @@ if f_pi and f_ce and st.button("🚀 Procesar", type="primary"):
                 except Exception as e:
                     st.warning(f"No se pudo leer Drive ({type(e).__name__}). Se continúa sin él: no se detectarán "
                                "metas sin reporte.")
-            st.session_state["resultado"] = pipeline.ejecutar(f_pi, f_ce, drive, vigencia_manual or None, criterio_flexible,
-                                                              z023=f_z)
+            st.session_state["resultado"] = pipeline.ejecutar(f_pi, f_ce, drive, vigencia_manual or None,
+                                                              criterio_flexible, z023=f_z)
+        st.rerun()
     except EsquemaError as e:
         st.session_state.pop("resultado", None)
         st.error(f"**Un archivo no tiene la estructura esperada.** ¿Subiste cada archivo en su lugar?\n\n{e}")
@@ -112,184 +116,22 @@ if f_pi and f_ce and st.button("🚀 Procesar", type="primary"):
         st.session_state.pop("resultado", None)
         st.error(f"Ocurrió un error al procesar los archivos: {type(e).__name__}: {e}")
 
-res = st.session_state.get("resultado")
 if res is None:
-    st.info("💡 Sube **Plan Indicativo MP** y **Centralizadas** para empezar.")
     st.stop()
 
 # ------------------------------------------------------------------ resultados
 for aviso in res.avisos:
     st.warning(aviso)
 if not res.usa_drive:
-    st.warning("Sin el Plan Indicativo de Drive no se detectan las **metas sin reporte** ni se valida la "
-               "programación. La vigencia se tomó del año actual.")
-
-m = res.matriz
-R = res.resumen
-st.caption(f"Vigencia analizada: **{res.vigencia}** · Periodo del prompt: {periodo}")
-recordatorios = recordatorios_cierre(periodo, m, res.es_descentralizada, res.aportes if res.usa_z023 else None)
-if recordatorios:
-    with st.container(border=True):
-        st.warning("**⚠️ Recordatorio de cierre de vigencia: hay certificados por solicitar.** Son pendientes de quien "
-                   "revisa, no hallazgos sobre lo que reportó la entidad. También se agregan al prompt.")
-        for r in recordatorios:
-            st.markdown(f"**{r['titulo']}.** {r['texto']}")
-            if r["metas"]:
-                st.caption("Metas: " + ", ".join(r["metas"]))
+    st.info("Sin el Plan Indicativo de Drive no se detectan las **metas sin reporte** ni se valida la programación. "
+            "La vigencia se tomó del año actual.")
 if res.usa_z023 and not res.z023_equivalencias:
     st.warning("No pude identificar la entidad del export en el Z023 (los códigos y nombres no coinciden): todos los "
                "proyectos del Z023 se muestran como de otras entidades.")
-k = st.columns(5)
-k[0].metric("Metas en el Plan Indicativo", R["metas_en_plan_indicativo"])
-k[1].metric("Reportadas en EVAPLAN", R["metas_reportadas"])
-k[2].metric("Sin reporte", R["metas_sin_reporte"])
-k[3].metric("Con alertas objetivas", R["metas_con_alertas"])
-k[4].metric("% ejecución financiera", f"{R['ppto_obligaciones'] / R['ppto_definitivo'] * 100:.1f} %"
-            if R["ppto_definitivo"] else "—")
 
-tab_res, tab_mat, tab_hal, tab_cal, tab_out = st.tabs(
-    ["Resumen", "Matriz por meta", "Hallazgos", "Calidad de datos", "Descargas y prompt"])
-
-
-def _vista(df: pd.DataFrame) -> pd.DataFrame:
-    """Copia para mostrar: fracciones como porcentaje y nombres legibles."""
-    d = df.copy()
-    for c in ("pct_avance_vigencia", "pct_avance_pg", "pct_ejecucion_financiera", "avance_actividades",
-              "avance_actividades_con_obligaciones", "brecha_meta_vs_actividades"):
-        if c in d:
-            d[c] = d[c].astype("Float64") * 100
-    return d
-
-
-PCT = {c: st.column_config.NumberColumn(ETIQUETAS[c].replace(" (0-1)", ""), format="%.1f %%")
-       for c in ("pct_avance_vigencia", "pct_avance_pg", "pct_ejecucion_financiera", "avance_actividades",
-                 "avance_actividades_con_obligaciones", "brecha_meta_vs_actividades")}
-DINERO = {c: st.column_config.NumberColumn(ETIQUETAS[c], format="$ %,.0f")
-          for c in ("ppto_definitivo", "ppto_obligaciones", "ppto_disponible")}
-
-with tab_res:
-    sin = m[m["estado_reporte"] != "Reportada"]
-    if len(sin):
-        st.subheader(f"⛔ Metas sin reporte ({len(sin)})")
-        st.caption("Están en el Plan Indicativo pero no vienen en el export de EVAPLAN (probable: la dependencia no reportó).")
-        st.dataframe(sin[["codigo_mp", "descripcion_mp", "comportamiento", "meta_vigencia"]].rename(columns=ETIQUETAS),
-                     hide_index=True, use_container_width=True)
-    st.subheader("Hallazgos por tipo")
-    if res.hallazgos.empty:
-        st.success("Sin hallazgos objetivos.")
-    else:
-        st.dataframe(etiquetar(res.hallazgos).groupby(["severidad", "hallazgo"]).size().rename("metas").reset_index()
-                     .sort_values(["severidad", "metas"], ascending=[True, False]),
-                     hide_index=True, use_container_width=True)
-    if res.usa_z023:
-        comp = m[m["n_proyectos_ajenos"] > 0]
-        st.subheader(f"🤝 Metas compartidas según el Z023 ({len(comp)})")
-        st.caption("Metas a las que también aportan proyectos de otras dependencias o entidades descentralizadas. "
-                   "Quien reporta la meta debe conocer ese avance: los avisos de 'sin actividades' o 'avance sin "
-                   "obligaciones' pueden explicarse por esos proyectos.")
-        filas_z = res.z023_filas_por_vigencia
-        st.caption(f"Se revisan solo las filas del Z023 de la **vigencia {res.vigencia}**: {filas_z.get(res.vigencia, 0)} de "
-                   f"{sum(filas_z.values())} (filas por vigencia en el archivo: "
-                   + ", ".join(f"{a}: {n}" for a, n in filas_z.items()) + "). Si cambiaste el archivo, vuelve a pulsar "
-                   "**Procesar** para recalcular.")
-        if len(comp):
-            st.dataframe(comp[["codigo_mp", "n_proyectos_z023", "n_proyectos_ajenos", "aportes_otras_entidades"]]
-                         .rename(columns=ETIQUETAS), hide_index=True, use_container_width=True)
-        else:
-            st.info("Ninguna de las metas cargadas recibe aportes de otras entidades en esta vigencia.")
-    st.subheader("Plan de acción vs. meta")
-    st.dataframe(
-        _vista(m[m["tiene_plan_de_accion"]])[["codigo_mp", "pct_avance_vigencia", "pct_ejecucion_financiera",
-                                              "avance_actividades", "avance_actividades_con_obligaciones",
-                                              "brecha_meta_vs_actividades"]]
-        .rename(columns=ETIQUETAS),
-        column_config={ETIQUETAS[c]: v for c, v in PCT.items()}, hide_index=True, use_container_width=True)
-    st.caption("La brecha es un número, no un veredicto: sin cronograma de ejecución no hay umbral único.")
-
-with tab_mat:
-    f1, f2, f3 = st.columns([2, 2, 3])
-    estados = f1.multiselect("Estado del reporte", sorted(m["estado_reporte"].unique()),
-                             default=sorted(m["estado_reporte"].unique()))
-    solo_alertas = f2.checkbox("Solo metas con alertas")
-    texto = f3.text_input("Buscar (código o descripción)")
-    v = m[m["estado_reporte"].isin(estados)]
-    if solo_alertas:
-        v = v[v["n_alertas"] > 0]
-    if texto:
-        v = v[v["codigo_mp"].str.contains(texto, case=False, na=False)
-              | v["descripcion_mp"].astype("string").str.contains(texto, case=False, na=False)]
-    cols = ["codigo_mp", "estado_reporte", "comportamiento", "meta_vigencia", "resultado", "pct_avance_vigencia",
-            "valor_proyectado", "pct_avance_pg", "ppto_definitivo", "ppto_obligaciones", "pct_ejecucion_financiera",
-            "avance_actividades", "avance_actividades_con_obligaciones", "n_alertas"]
-    if res.usa_z023:
-        cols += ["n_proyectos_z023", "n_proyectos_ajenos"]
-    st.dataframe(_vista(v)[cols].rename(columns=ETIQUETAS),
-                 column_config={ETIQUETAS[c]: x for c, x in {**PCT, **DINERO}.items()},
-                 hide_index=True, use_container_width=True)
-    with st.expander("Ver todas las columnas"):
-        st.dataframe(_vista(v).rename(columns=ETIQUETAS), hide_index=True, use_container_width=True)
-
-    st.subheader("Ficha de la meta")
-    if len(v):
-        mp = st.selectbox("Meta", v["codigo_mp"], format_func=lambda c: f"{c} · {m.set_index('codigo_mp').loc[c, 'descripcion_mp']}"[:140])
-        f = m.set_index("codigo_mp").loc[mp]
-        a, b, c, d = st.columns(4)
-        a.metric("Meta vigencia", f"{f['meta_vigencia']:g}" if pd.notna(f["meta_vigencia"]) else "NP")
-        b.metric("Resultado (acumulado)", f"{f['resultado']:g}" if pd.notna(f["resultado"]) else "—")
-        c.metric("% vs meta", f"{f['pct_avance_vigencia'] * 100:.1f} %" if pd.notna(f["pct_avance_vigencia"]) else "—")
-        d.metric("Proyección de cierre", f"{f['valor_proyectado']:g}" if pd.notna(f["valor_proyectado"]) else "sin dato")
-        st.write(f"**Comportamiento:** {f['comportamiento']} · **Proyectos:** {f['proyectos'] if pd.notna(f['proyectos']) else 'sin plan de acción'}")
-        st.write(f"**Avance promedio de TODAS las actividades (prima para el análisis):** "
-                 f"{f['avance_actividades'] * 100:.1f} %" if pd.notna(f["avance_actividades"]) else
-                 "**Avance promedio de TODAS las actividades:** sin plan de acción")
-        st.write(f"**Avance promedio solo de actividades con obligaciones (complementario):** "
-                 + (f"{f['avance_actividades_con_obligaciones'] * 100:.1f} % ({f['n_registros_con_obligaciones']} de "
-                    f"{f['n_registros']} registros)" if pd.notna(f["avance_actividades_con_obligaciones"])
-                    else "sin dato (ningún registro tiene obligaciones)"))
-        st.write(f"**Avance de actividades por proyecto:** {f['avance_por_proyecto'] if pd.notna(f['avance_por_proyecto']) else '—'}")
-        if res.usa_z023:
-            ap = res.aportes[res.aportes["codigo_mp"] == mp]
-            st.markdown(f"**Proyectos que aportan a esta meta (Z023, vigencia {res.vigencia}):**")
-            if ap.empty:
-                st.caption("El Z023 no tiene actividades de ningún proyecto para esta meta en la vigencia.")
-            else:
-                st.dataframe(ap.drop(columns=["codigo_mp", "vigencia"]).rename(columns=ETIQUETAS_APORTES),
-                             column_config={ETIQUETAS_APORTES["valor_actividades"]:
-                                            st.column_config.NumberColumn(format="$ %,.0f")},
-                             hide_index=True, use_container_width=True)
-                st.caption("Las entidades descentralizadas solo llegan a PPM: no tienen código PS ni actividades en EVAPLAN.")
-        if f["alertas"]:
-            st.warning(f["alertas"])
-        for titulo, col in (("Principal logro", "principal_logro"), ("Análisis del logro", "analisis_logro"),
-                            ("Dificultades o gestiones", "dificultades_gestiones")):
-            st.markdown(f"**{titulo}:** {f[col] if pd.notna(f[col]) else '_(vacío)_'}")
-
-with tab_hal:
-    sev = st.multiselect("Severidad", ["error", "advertencia", "info"], default=["error", "advertencia", "info"])
-    h = res.hallazgos[res.hallazgos["severidad"].isin(sev)]
-    st.dataframe(etiquetar(h).drop(columns=["fila_excel", "fuente"]), hide_index=True, use_container_width=True)
-    st.caption("Son incoherencias objetivas (no necesitan umbral). La gravedad y el dictamen los decide quien revisa.")
-
-with tab_cal:
-    st.write("Reglas de integridad y comparación entre fuentes (EVAPLAN vs. Plan Indicativo, presupuesto, avance).")
-    if res.calidad.empty:
-        st.success("Sin observaciones de calidad de datos.")
-    else:
-        st.dataframe(etiquetar(res.calidad), hide_index=True, use_container_width=True)
-
-with tab_out:
-    d1, d2 = st.columns(2)
-    d1.download_button("📥 Matriz integrada (Excel)", reportes.a_excel(m, res.hallazgos, res.calidad, res.aportes if res.usa_z023 else None),
-                       file_name="MP_PI_PA_Integrado.xlsx", use_container_width=True,
-                       mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
-    d2.download_button("📥 Reporte por meta (PDF) para el LLM", reportes.a_pdf(m),
-                       file_name="MP_PI_PA_Reporte.pdf", mime="application/pdf", use_container_width=True)
-    st.markdown("---")
-    st.subheader("🤖 Asistente de Auditoría EVAPLAN (prompt listo)")
-    with st.expander("📋 Ver y copiar el prompt para Gemini / ChatGPT", expanded=True):
-        st.markdown("💡 **Paso 1:** copia el prompt con el icono de la esquina superior derecha del bloque.")
-        st.code(generar_prompt_sistema(periodo, res.vigencia, con_hechos, recordatorios), language="markdown", wrap_lines=True)
-        st.markdown("🚀 **Paso 2:** pégalo en la IA y luego adjunta el PDF y el Excel descargados.")
-        g1, g2 = st.columns(2)
-        g1.link_button("🌐 Ir a Google Gemini Web", "https://gemini.google.com/", use_container_width=True, type="primary")
-        g2.link_button("💬 Ir a ChatGPT (alternativo)", "https://chatgpt.com/", use_container_width=True)
+recordatorios = recordatorios_cierre(periodo, res.matriz, res.es_descentralizada, res.aportes if res.usa_z023 else None)
+vista.barra_acciones(res, periodo, con_hechos, recordatorios)
+vista.recordatorios_cierre(recordatorios)
+vista.cifras(res)
+vista.lista_y_ficha(res)
+vista.detalle_tecnico(res)

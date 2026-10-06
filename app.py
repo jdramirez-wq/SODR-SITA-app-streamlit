@@ -1,49 +1,31 @@
+"""Portada de la plataforma de la SODR: elegir el trámite."""
+import sys
+from pathlib import Path
+
 import streamlit as st
 
-# Configuración de página principal (Inicia con el menú expandido de forma nativa)
-st.set_page_config(
-    page_title="Plataforma de Gestión - SODR",
-    page_icon="🏢",
-    layout="wide",
-    initial_sidebar_state="expanded"
-)
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-# Estilo CSS seguro: SOLO oculta la línea decorativa superior y el pie de página, 
-# dejando intactos los botones de navegación y despliegue de Streamlit.
-estilo_seguro_css = """
-    <style>
-    /* Oculta la línea roja/decorativa superior del header */
-    div[data-testid="stHeader"] {background-color: transparent;}
-    /* Oculta el pie de página de marca */
-    footer {visibility: hidden;}
-    </style>
-"""
-st.markdown(estilo_seguro_css, unsafe_allow_html=True)
+from interfaz import estilos
 
-# Contenido de la Bienvenida
-st.title("🏢 Sistema Integrado de Trámites y Auditoría - SODR")
-st.write("Bienvenido a la plataforma de herramientas de la Subdirección de Ordenamiento y Desarrollo Regional.")
-st.markdown("---")
+st.set_page_config(page_title="Plataforma de Gestión - SODR", page_icon="🏢", layout="wide",
+                   initial_sidebar_state="expanded")
+estilos.aplicar_estilos()
 
-st.subheader("💡 Selecciona un trámite para comenzar:")
+estilos.encabezado(
+    "Plataforma de trámites y auditoría",
+    "Subdirección de Ordenamiento y Desarrollo Regional (SODR). Herramientas para el seguimiento del Plan de "
+    "Desarrollo Departamental.")
 
-# Creamos dos columnas en la pantalla de inicio
+st.subheader("¿Qué quieres hacer?")
 col1, col2 = st.columns(2)
-
-with col1:
-    st.markdown("### 📊 Seguimiento EVAPLAN")
-    st.write(
-        "Cruce de lo reportado en EVAPLAN con el Plan Indicativo (Drive) y el Plan de Acción: metas sin reporte, "
-        "avance y ejecución financiera, reportes PDF/Excel y Prompt para el BOT auditor."
-    )
-    # Enrutamiento directo y limpio por nombre de archivo
-    st.page_link("pages/1_Auditoria_EVAPLAN.py", label="Ir a Seguimiento EVAPLAN", icon="📊", use_container_width=True)
-
-with col2:
-    st.markdown("### 📝 POAI 2027")
-    st.write(
-        "Módulo destinado a la formulación, revisión y cargue del Plan Operativo Anual de Inversiones (POAI) "
-        "para la vigencia 2027. *(En desarrollo)*"
-    )
-    # Enrutamiento directo y limpio por nombre de archivo
-    st.page_link("pages/2_POAI_2027.py", label="Explorar Módulo POAI", icon="📝", use_container_width=True)
+with col1, st.container(border=True):
+    st.markdown("#### 📊 Seguimiento EVAPLAN")
+    st.write("Cruza lo reportado en EVAPLAN con el Plan Indicativo y el Plan de Acción: metas sin reporte, avance, "
+             "ejecución financiera, reportes en Excel y PDF y el prompt para el asistente de auditoría.")
+    st.page_link("pages/1_Auditoria_EVAPLAN.py", label="Abrir Seguimiento EVAPLAN", icon="📊", use_container_width=True)
+with col2, st.container(border=True):
+    st.markdown("#### 📝 POAI 2027")
+    st.write("Formulación, revisión y cargue del Plan Operativo Anual de Inversiones para la vigencia 2027.")
+    st.caption("En desarrollo")
+    st.page_link("pages/2_POAI_2027.py", label="Explorar el módulo POAI", icon="📝", use_container_width=True)
