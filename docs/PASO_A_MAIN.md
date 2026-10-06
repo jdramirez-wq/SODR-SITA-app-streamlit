@@ -9,7 +9,7 @@ Hay dos apps en Streamlit Cloud:
 
 | App | Rama | Archivo principal | Para qué |
 |---|---|---|---|
-| **Oficial** (la que usan los compañeros): <https://sodr-sita-app.streamlit.app/> | `main` | por confirmar (ver paso 5) | Uso diario |
+| **Oficial** (la que usan los compañeros): <https://sodr-sita-app.streamlit.app/> | `main` | `app.py` (confirmado en los Logs) | Uso diario |
 | **De prueba** (`seguimiento-evaplan-prueba`) | rama de trabajo | `pages/1_Auditoria_EVAPLAN.py` | Probar antes de publicar |
 
 ---
@@ -59,8 +59,7 @@ No hace falta borrar la rama después (GitHub lo ofrece; es opcional).
          enlace"**.
 
 ## Paso 6 (recomendado). Dirección más seria y archivo principal correcto
-> **Hecho (octubre de 2026):** la app oficial quedó en <https://sodr-sita-app.streamlit.app/>. Falta confirmar que su
-> archivo principal sea `app.py` (⋮ → Logs, primera línea).
+> **Hecho (octubre de 2026):** la app oficial quedó en <https://sodr-sita-app.streamlit.app/> y arranca desde `app.py`.
 
 Para cambiar la dirección (antes `mi-primera-app-streamlit.streamlit.app`):
 - Primero busca en **⋮ → Settings → General** si deja editar la dirección (subdominio). Si se puede, cámbiala ahí
@@ -87,8 +86,9 @@ Consecuencias:
 - Por eso conviene hacerlo **junto con el paso 6**, una sola vez.
 
 ## Paso 8. Limpieza (lo hago yo cuando me avises)
-- Cuando la app oficial arranque desde `app.py`: borrar los archivos de compatibilidad de `pages/`
-  (si la app de prueba sigue usándolos, la apunto también a `app.py` o la dejamos como está).
+- Los archivos de compatibilidad de `pages/` **se quedan** mientras la app de prueba arranque desde
+  `pages/1_Auditoria_EVAPLAN.py` (así lo muestran sus Logs, octubre de 2026). Solo se borran si esa app se recrea con
+  `app.py` como archivo principal.
 - La **app de prueba** se queda para futuras ramas: cada mejora se prueba ahí antes de un nuevo PR.
 - Actualizar `CLAUDE.md` y `docs/COMO_PROBAR_LA_RAMA.md` con las direcciones definitivas.
 
