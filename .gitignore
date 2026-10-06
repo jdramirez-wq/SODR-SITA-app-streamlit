@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Secretos de Streamlit (NUNCA subir; el repo es público)
+.streamlit/secrets.toml
+
+# Datos reales: el repo es público, solo se versionan ejemplos ficticios
+data/*
+!data/README.md
+!data/ejemplos/
+
+# Archivos de oficina / descargas de otras plataformas fuera de data/
+*.xlsx
+*.xls
+*.csv
+*.docx
+*.pdf
+*.xml
+!data/ejemplos/**
+
+# Editor / sistema
+.DS_Store
+.vscode/
+.idea/

@@ -1,0 +1,11 @@
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+# Solo errores reales (sintaxis, nombres no definidos). Se ampliará al ordenar el código.
+select = ["E9", "F63", "F7", "F82"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]   # así `pytest` (como lo corre GitHub) encuentra `src` e `interfaz`

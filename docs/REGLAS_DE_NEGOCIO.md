@@ -1,0 +1,117 @@
+# Reglas de negocio y de integridad
+
+Las reglas viven en `src/evaplan/validaciones.py` y se prueban con los ejemplos de `data/ejemplos/`
+(`tests/test_validaciones.py`). **Una regla "por confirmar" nunca se reporta como error.**
+
+## Identificación (llaves)
+| Id | Regla | Estado | Severidad | Función |
+|---|---|---|---|---|
+| L1 | El código MP tiene 18 caracteres: `MP`+MR(5)+subprograma(2)+consecutivo(2)+producto MGA(7) | ✅ | error | `codigo_mp_coherente` |
+| L2 | Programa y subprograma de la fila coinciden con los del código MP (error); el producto MGA casi siempre coincide (advertencia: hay casos reales con 1 dígito de diferencia) | ✅ | error / advertencia | `codigo_mp_coherente` |
+| L3 | La llave de cada tabla es única: `codigo_mp`, `codigo_mr` y, en Centralizadas, **`id_registro`** (el código de actividad se repite: una actividad puede tener varios registros) | ✅ | error | `llave_unica` |
+| L4 | Un proyecto tiene un único BPIN; el código de actividad empieza por el del proyecto | ✅ | error | `integridad_centralizadas` |
+| L5 | Toda MP cuelga de una MR existente (dígitos 3-7 del código MP) | ✅ | error | `mr_existe` |
+| L6 | La entidad se identifica por su **código**, nunca por el nombre | ✅ | — | (convención) |
+
+## Cobertura entre fuentes
+| Id | Regla | Estado | Severidad | Función |
+|---|---|---|---|---|
+| C1 | Toda meta del export de EVAPLAN existe en el Plan Indicativo de Drive | ✅ | error | `cobertura_evaplan_vs_drive` |
+| C2 | Toda meta de Drive de las entidades del export aparece en el export | ✅ | advertencia | `cobertura_evaplan_vs_drive` |
+| C3 | Actividades de Centralizadas cuya meta no está en el export del PI: puede ser una meta coordinada por OTRA dependencia (MP compartida) | ✅ | advertencia | `cobertura_centralizadas_vs_pi` |
+| C4 | Metas del PI sin actividades en Centralizadas | — | info | `cobertura_centralizadas_vs_pi` |
+| C5 | PG y valores 2024-2027 (con `NP`) del export = bloque vigente de Drive | ✅ | advertencia | `valores_evaplan_vs_drive` |
+
+## Z023 consolidado (solo si se carga el cuarto cuadro)
+| Id | Regla | Estado | Severidad | Función |
+|---|---|---|---|---|
+| Z1 | `PPM: Actividad` única | ✅ | error | `z023_calidad` (`llave_unica`) |
+| Z2 | Toda actividad tiene meta de producto de 18 caracteres | ✅ | advertencia | `z023_calidad` |
+| Z3 | BPIN válido: empieza por 2 y tiene 12-16 caracteres (criterio de la macro del consolidado); una alerta por proyecto | ✅ | advertencia | `z023_calidad` |
+| Z4 | Toda actividad de Centralizadas existe en el Z023 (mismo código PS) | ✅ | advertencia | `centralizadas_vs_z023` |
+| Z5 | La meta de la actividad en Centralizadas = la del Z023 | ✅ | advertencia | `centralizadas_vs_z023` |
+| Z6 | Meta compartida: le aportan proyectos de otras dependencias o entidades descentralizadas | — | info | `meta_con_aportes_de_otras_entidades` |
+| Z7 | Meta sin actividades en el Z023 en la vigencia | — | info | `meta_sin_proyectos_en_z023` |
+
+Las reglas Z1-Z3 solo revisan las filas de las dependencias cargadas (el Z023 trae todas). Z6 y Z7 son hechos para quien
+revisa: la presencia de aportes ajenos **no excusa** el aviso de "sin actividades" o "avance sin obligaciones" (quien
+reporta debe conocer ese avance).
+
+## Condiciones de las Alertas Tipo 1, 2 y 3 del prompt (PDF y ficha de la meta)
+Prueba con un modelo de IA sencillo (6-oct): con los mismos datos confundía los tipos de alerta. La herramienta ahora
+comprueba **solo la parte numérica** de cada alerta, con los umbrales que trae el propio prompt, y lo dice por meta
+("se cumple / no se cumple / no se puede comprobar"). Si la narrativa lo explica y el dictamen siguen siendo juicio.
+Función: `condiciones.condiciones_prompt`.
+
+| Tipo | Condición numérica comprobada |
+|---|---|
+| 1 | Resultado de la meta > 0 y obligaciones = $ 0 (se informa si la narrativa menciona gestión/donación/cofinanciación/sin costo) |
+| 2 | Resultado = 0 y ejecución financiera > 30 % (se informa si Dificultades está vacío y cuántas actividades tienen obligaciones sin avance) |
+| 3 | Avance frente a la meta ≥ 100 % y avance de actividades < 30 % (en total o en algún proyecto); se dice si la meta va por encima o por debajo de las actividades |
+
+## Recordatorios de cierre de vigencia
+No son hallazgos: son **pendientes de quien revisa** (certificados que el sistema no trae). Solo aparecen cuando el
+periodo de revisión elegido es de cierre (*Revisión Acumulada y Proyectada a Cierre de Vigencia* o *Revisión a Cierre de
+Vigencia*). Se muestran en la página y se agregan al prompt para que el LLM los repita como advertencia al final de su
+informe. Función: `recordatorios.recordatorios_cierre`. El detalle de los certificados está **por definir con el equipo**.
+
+| Id | Cuándo aparece | Qué recuerda |
+|---|---|---|
+| K1 | La entidad del export es descentralizada (su código en el Z023 empieza por `00`; sin Z023, sus actividades no tienen código PS) | Solicitar su certificado financiero: ella misma registra su información financiera, no viene de SAP |
+| K2 | Con el Z023 cargado, alguna meta recibe aportes de entidades descentralizadas | Solicitar el certificado financiero a cada una, con la lista de metas |
+| K3 | Cualquier entidad (central o descentralizada) con metas reportadas con avance cuya narrativa menciona gestión, donación, cofinanciación o sin costo | Solicitar el certificado o soporte del avance declarado por gestión, con la lista de metas |
+
+## Indicadores
+| Id | Regla | Estado | Severidad | Función |
+|---|---|---|---|---|
+| I1 | Acumulado: PG = suma de años. Flujo: PG = valor 2027. Mantenimiento: todos los años = PG | ❓ | advertencia | `pg_vs_anios` |
+| I2 | Se aplica solo a la **programación** (bloque original); nunca al bloque vigente (trae logros) | ✅ | — | `validar_todo` |
+| I3 | `NP` (No Programado) no es 0: se conserva como marca aparte | ✅ | — | `limpieza.valor_np` |
+
+## Presupuesto y avance (Centralizadas)
+| Id | Regla | Estado | Severidad | Función |
+|---|---|---|---|---|
+| P1 | Obligaciones ≤ presupuesto definitivo; sin cifras negativas | ✅ | error | `presupuesto_invariantes` |
+| P2 | Disponible ≤ definitivo − obligaciones | ✅ | error | `presupuesto_invariantes` |
+| P3 | `% avance = ejecutada / programada × 100` (ejecutada vacía = 0) | ✅ | error | `avance_consistente` |
+| P4 | Avance físico superior a 100 % | — | advertencia | `avance_consistente` |
+| P5 | Registro con obligaciones > 0, sin avance físico y **con cantidad programada** en la vigencia. Sin observación que lo explique = advertencia; con observación = informativo | ✅ | advertencia / info | `ejecucion_financiera_vs_fisica` |
+| P5b | Registro sin cantidad programada en la vigencia (no hay avance que medir) | ✅ | info | `avance_consistente` |
+| P5c | Registro con cantidad programada y `% avance` vacío (pasa en las descentralizadas: INDERVALLE tenía 61 de 119): en el promedio de actividades **cuenta como 0 %**, igual que EVAPLAN hace con la cantidad ejecutada vacía; sin cantidad programada no cuenta | ✅ | info | `avance_vacio_con_programacion`, `seguimiento._consolidar_plan_de_accion` |
+| P5d | **Dos promedios de avance de actividades.** (a) De TODAS las actividades (registros) de la meta: **es el que PRIMA para el análisis**; es el de la versión original de la página (`mean` sobre todos los registros del grupo) y el que usa el prompt (Alerta Tipo 3). (b) Solo de los registros con obligaciones > 0: complementario, para ver la brecha con (a); "sin dato" si ninguno tiene obligaciones (nunca 0). Ambos se entregan en la matriz, el Excel, el PDF y la página, y el prompt explica cuál prima | ✅ | hecho | `seguimiento.PROMEDIO_QUE_PRIMA` |
+| P5e | Sumas sin ningún valor (todas las obligaciones vacías): **"sin dato"**, no 0 (decisión del equipo, 6-oct) | ✅ | hecho | `_consolidar_plan_de_accion` |
+| P6 | `CON EJECUCION` ⇔ obligaciones > 0 | ✅ | advertencia | `ejecucion_financiera_vs_fisica` |
+| P7 | Presupuesto definitivo de la meta > recursos de la vigencia programados en el PI | ❓ | advertencia | `presupuesto_vs_recursos_pi` |
+
+## Seguimiento por meta (matriz de la página)
+Se calculan **hechos**, sin umbrales: no existe un cronograma único de ejecución, así que no se inventan semáforos.
+| Id | Hecho / incoherencia | Estado | Severidad | Hallazgo |
+|---|---|---|---|---|
+| S1 | Vigencia en curso = primer año del Plan Indicativo sin `VAL ALC` en el encabezado | ✅ | — | `inferir_vigencia` |
+| S2 | `% avance vs meta vigencia = Resultado / meta de la vigencia` (meta > 0) | ✅ | — | columna |
+| S3 | Acumulado/Capacidad: `avance cuatrienio = Σ logros de vigencias cerradas + Resultado`; `% vs PG` | ✅ ❓1 | — | columnas |
+| S4 | `% ejecución financiera = Σ obligaciones / Σ definitivo` de las actividades de la meta | ✅ | — | columna |
+| S5 | Avance de actividades: promedio global **y por proyecto de inversión** (el prompt lo exige por proyecto) | ✅ | — | `avance_por_proyecto` |
+| S6 | Meta del Plan Indicativo sin reporte en EVAPLAN | ✅ ❓ | advertencia | `sin_reporte` |
+| S7 | Avance (Resultado > 0) con obligaciones = 0 y sin mencionar gestión/donación/cofinanciación/sin costo | ✅ | advertencia | `avance_sin_ejecucion_financiera` |
+| S8 | Lo mismo pero la narrativa sí menciona gestión (verificar soporte) | ✅ | info | `avance_sin_ejecucion_con_gestion` |
+| S9 | Obligaciones > 0, Resultado = 0 y sin justificación **en Dificultades** (lineamiento de la líder del equipo; con el criterio flexible también sirve el Análisis del logro) | ✅ | advertencia | `ejecucion_sin_avance_sin_explicacion` |
+| S9b | Resultado = 0 sin justificación en Dificultades, con o sin obligaciones (flexible: también Análisis) | ✅ | advertencia | `avance_cero_sin_justificacion` |
+| S9c | Resultado = 0 con Principal logro o Análisis (según el lineamiento un avance 0 se explica en Dificultades). Solo en el criterio estricto | ✅ | info | `narrativa_con_resultado_cero` |
+| S10 | **Registros** presupuestales con obligaciones y sin avance físico: sin observación = advertencia; con observación = informativo | ✅ | advertencia / info | `registros_con_obligaciones_sin_avance`, `registros_sin_avance_con_observacion` |
+| S11 | Avance (resultado > 0) sin Principal Logro o Análisis | ✅ | advertencia | `resultado_sin_narrativa` |
+| S12 | Reporte con avance pero sin meta programada (NP o 0); resultado supera la meta | ✅ | advertencia / info | `reporte_sin_meta_programada`, `resultado_supera_meta_vigencia` |
+| S12b | Proyección de cierre de la dependencia (`Valor Proyectado`) por debajo de la meta de la vigencia; o menor que el resultado ya acumulado en metas acumulativas | ✅ | advertencia | `proyeccion_bajo_meta`, `proyeccion_menor_que_resultado` |
+| S13 | Meta sin actividades en Centralizadas | — | info | `sin_plan_de_accion` |
+| S15 | Meta de la vigencia del export de EVAPLAN distinta a la de Drive: **prevalece Drive** (el operador de EVAPLAN a veces no lo tiene actualizado) | ✅ | advertencia | `meta_vigencia_difiere_del_export` |
+| S14 | Encabezado del año cerrado sin `VAL ALC` (o abierto con `VAL ALC`) en Drive | ✅ | advertencia | `vigencia_*_marca_logro` |
+
+**Metas compartidas (nota SODR 1-oct):** el PA lo reporta el centro gestor y el PI solo el coordinador de la meta. "Meta sin actividades" y "avance sin obligaciones" pueden deberse a proyectos de otra dependencia, pero la **suposición de base** es que quien reporta conoce ese avance y lo indica en su narrativa: por eso siguen siendo avisos y no se excusan. El indicador "con alertas" cuenta solo advertencias y errores, no los informativos.
+
+*Lo que se deja al LLM/analista:* si el avance es "suficiente", la gravedad de cada alerta, la desconexión
+jerárquica (se entrega la brecha numérica `meta vs actividades`, no un veredicto), la calidad narrativa y el dictamen.
+
+## Pendiente de definir (requiere al equipo)
+- Tratamiento de `Reducción Anual` (metas de resultado) y de metas reprogramadas dentro del cuatrienio.
+- Metas de resultado: fuera de alcance por ahora (solo metas de producto).
+- Semáforos: **descartados por ahora** (no hay umbrales únicos); se retomarán si el equipo define un cronograma.
