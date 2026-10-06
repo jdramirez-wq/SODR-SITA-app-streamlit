@@ -17,9 +17,9 @@ estilos.aplicar_estilos()
 paginas = {
     "": [st.Page(portada.mostrar, title="Inicio", icon=":material/home:", default=True)],
     "Trámites": [
-        st.Page("pages/1_Auditoria_EVAPLAN.py", title="Seguimiento EVAPLAN", icon=":material/fact_check:",
+        st.Page("paginas/1_Auditoria_EVAPLAN.py", title="Seguimiento EVAPLAN", icon=":material/fact_check:",
                 url_path="seguimiento"),
-        st.Page("pages/2_POAI_2027.py", title="POAI 2027", icon=":material/edit_note:", url_path="poai"),
+        st.Page("paginas/2_POAI_2027.py", title="POAI 2027", icon=":material/edit_note:", url_path="poai"),
     ],
 }
-st.navigation(paginas).run()
+st.navigation(paginas, position="top").run()   # barra superior: siempre se puede volver al inicio

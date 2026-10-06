@@ -8,8 +8,8 @@ Desarrollo Departamental (Plan Indicativo, Plan de Acción, proyectos, MGA, POAI
 ## Módulos
 | Módulo | Archivo | Estado |
 |---|---|---|
-| Auditoría EVAPLAN | `pages/1_Auditoria_EVAPLAN.py` | Operativo |
-| POAI 2027 (control previo) | `pages/2_POAI_2027.py` | En desarrollo |
+| Auditoría EVAPLAN | `paginas/1_Auditoria_EVAPLAN.py` | Operativo |
+| POAI 2027 (control previo) | `paginas/2_POAI_2027.py` | En desarrollo |
 
 ## Ejecutar en local
 ```bash

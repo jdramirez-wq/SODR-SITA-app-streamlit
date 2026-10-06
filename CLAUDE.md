@@ -19,10 +19,10 @@ reportes. La usan compañeros del área (no programadores). Se mejora de forma i
 ## Estructura
 ```
 app.py                       Navegación (st.navigation): Inicio, Seguimiento EVAPLAN (/seguimiento), POAI 2027 (/poai)
-pages/1_Auditoria_EVAPLAN.py SEGUIMIENTO EVAPLAN (página en foco): cruza Plan Indicativo (Drive + EVAPLAN) con
+paginas/1_Auditoria_EVAPLAN.py SEGUIMIENTO EVAPLAN (página en foco): cruza Plan Indicativo (Drive + EVAPLAN) con
                              Centralizadas; matriz por meta, hallazgos, Excel/PDF y prompt del auditor. Interfaz
                              delgada sobre src/evaplan/pipeline.py
-pages/2_POAI_2027.py         (CONGELADA por ahora) Control previo de proyectos: Cadena de Valor (.docx), MGA (XML),
+paginas/2_POAI_2027.py         (CONGELADA por ahora) Control previo de proyectos: Cadena de Valor (.docx), MGA (XML),
                              cruce con PI desde Drive (hoja "MP"), auditoría Z023, prompt IA
 interfaz/                    Componentes visuales de Streamlit: estilos.py (paleta, tarjetas, alertas), portada.py, logo/icono SVG
                              y seguimiento.py (vistas de la
@@ -50,7 +50,7 @@ python scripts/generar_ejemplos.py      # regenera los archivos ficticios
 ```
 
 ## Convenciones de código
-- Código **por trámite** en `pages/` (interfaz delgada); lógica reutilizable en `src/` como funciones puras
+- Código **por trámite** en `paginas/` (interfaz delgada; no se usa `pages/` porque choca con la navegación de app.py); lógica reutilizable en `src/` como funciones puras
   sin Streamlit, con pruebas en `tests/`. *Pendiente: las 2 páginas actuales aún mezclan interfaz y lógica;
   migrarlas de a una a `src/evaplan`, reproduciendo primero sus resultados.*
 - **Contrato de datos:** toda columna de una fuente se define en `src/evaplan/esquemas.py` (nombre canónico,
@@ -107,11 +107,11 @@ python scripts/generar_ejemplos.py      # regenera los archivos ficticios
 - Dependencias nuevas: añadir a `requirements.txt` y justificarlas en el PR.
 
 ## Deuda técnica conocida
-- `pages/2_POAI_2027.py` (~1070 líneas) y `pages/1_Auditoria_EVAPLAN.py` (~460) son monolíticos.
-- El enlace de Drive del Plan Indicativo está escrito en `pages/2_POAI_2027.py` (`URL_DRIVE_EXCEL`);
+- `paginas/2_POAI_2027.py` (~1070 líneas) y `paginas/1_Auditoria_EVAPLAN.py` (~460) son monolíticos.
+- El enlace de Drive del Plan Indicativo está escrito en `paginas/2_POAI_2027.py` (`URL_DRIVE_EXCEL`);
   debe pasar a `st.secrets` y la hoja debe tener permisos acordes (ver docs/HOJA_DE_RUTA.md).
-- `pages/2_POAI_2027.py` no usa aún `src/evaplan`; `requirements.txt` sin versiones fijadas.
-- `pages/2_POAI_2027.py` aún usa `use_container_width` (obsoleto; las vistas nuevas usan `width="stretch"`).
+- `paginas/2_POAI_2027.py` no usa aún `src/evaplan`; `requirements.txt` sin versiones fijadas.
+- `paginas/2_POAI_2027.py` aún usa `use_container_width` (obsoleto; las vistas nuevas usan `width="stretch"`).
 - Pendiente revisar el script del compañero al cerrar la primera versión de Seguimiento EVAPLAN.
 - Lint de CI limitado a errores reales; ampliar al ordenar el código.
 

@@ -1,6 +1,6 @@
 # Hoja de ruta
 
-Foco actual: **una sola página, Seguimiento EVAPLAN** (`pages/1_Auditoria_EVAPLAN.py`). POAI 2027 queda congelada.
+Foco actual: **una sola página, Seguimiento EVAPLAN** (`paginas/1_Auditoria_EVAPLAN.py`). POAI 2027 queda congelada.
 
 ## Fase 0 — Orden del proyecto ✅
 Estructura, `CLAUDE.md`, README, CI, plantillas, reglas de privacidad.
@@ -37,7 +37,7 @@ Estructura, `CLAUDE.md`, README, CI, plantillas, reglas de privacidad.
 
 ## Fase 4 — Seguridad (repo público)
 - [ ] Probar el paso del repo a privado en Streamlit Community Cloud
-- [ ] Mover `URL_DRIVE_EXCEL` de `pages/2_POAI_2027.py` a secretos y revisar permisos del libro en Drive
+- [ ] Mover `URL_DRIVE_EXCEL` de `paginas/2_POAI_2027.py` a secretos y revisar permisos del libro en Drive
 - [ ] Decidir quién puede abrir la app (limitar por correo institucional)
 - [x] Plan Indicativo abierto por enlace: aceptado por el equipo de momento (si cambia: cuenta de servicio de Google)
 

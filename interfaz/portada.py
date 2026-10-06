@@ -19,11 +19,11 @@ def mostrar() -> None:
         st.write("Cruza lo reportado en EVAPLAN con el Plan Indicativo y el Plan de Acción: metas sin reporte, "
                  "avance, ejecución financiera, reportes en Excel y PDF y el prompt para el asistente de auditoría.")
         estilos.chips(["Metas de producto", "Alertas objetivas", "PDF para IA"])
-        st.page_link("pages/1_Auditoria_EVAPLAN.py", label="Abrir Seguimiento EVAPLAN",
+        st.page_link("paginas/1_Auditoria_EVAPLAN.py", label="Abrir Seguimiento EVAPLAN",
                      icon=":material/arrow_forward:", width="stretch")
     with col2, st.container(border=True):
         st.markdown("#### POAI 2027")
         st.write("Formulación, revisión y cargue del Plan Operativo Anual de Inversiones para la vigencia 2027.")
         estilos.chips(["En desarrollo"])
-        st.page_link("pages/2_POAI_2027.py", label="Explorar el módulo POAI", icon=":material/arrow_forward:",
+        st.page_link("paginas/2_POAI_2027.py", label="Explorar el módulo POAI", icon=":material/arrow_forward:",
                      width="stretch")

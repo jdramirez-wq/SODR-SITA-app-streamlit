@@ -18,7 +18,7 @@ jobs:
       - name: Lint (errores reales)
         run: ruff check .
       - name: Compila todos los módulos
-        run: python -m compileall -q app.py pages
+        run: python -m compileall -q app.py paginas interfaz src
       - name: Pruebas
         run: |
           if [ -d tests ]; then pytest; else echo "Aún no hay pruebas"; fi

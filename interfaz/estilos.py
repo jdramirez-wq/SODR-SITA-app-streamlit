@@ -21,8 +21,9 @@ CSS = """
 }
 .stApp {font-feature-settings: "tnum" 1;}   /* números tabulares: las cifras alinean */
 footer, #MainMenu {visibility: hidden;}
-div[data-testid="stHeader"] {background: transparent;}
-.block-container {padding-top: 1.6rem; padding-bottom: 4rem; max-width: 1180px;}
+div[data-testid="stHeader"] {background: rgba(255,255,255,.96); border-bottom: 1px solid var(--borde);
+                              backdrop-filter: blur(6px);}
+.block-container {padding-top: 4.6rem; padding-bottom: 4rem; max-width: 1180px;}   /* deja libre la barra superior */
 h1, h2, h3, h4, h5 {letter-spacing: -0.015em; color: var(--texto);}
 h3 {font-size: 1.12rem !important; font-weight: 650 !important; margin-top: .6rem;}
 h5 {font-size: .95rem !important; font-weight: 650 !important; color: var(--verde-oscuro) !important;}
@@ -110,8 +111,8 @@ div[data-testid="stFileUploaderDropzoneInstructions"] span, div[data-testid="stF
     {font-size: 0 !important;}
 div[data-testid="stFileUploaderDropzoneInstructions"] > div:after
     {content: "Arrastra aquí el archivo o elígelo"; font-size: .85rem; color: var(--suave);}
-div[data-testid="stFileUploaderDropzone"] button p {font-size: 0 !important;}
-div[data-testid="stFileUploaderDropzone"] button p:after {content: "Elegir archivo"; font-size: .875rem;}
+[data-testid="stFileUploaderDropzone"] button p {font-size: 0 !important;}
+[data-testid="stFileUploaderDropzone"] button p:after {content: "Elegir archivo"; font-size: .875rem;}
 
 @media (max-width: 900px) {.kpis, .pasos {grid-template-columns: repeat(2, 1fr);} .hero h1 {font-size: 1.4rem;}}
 </style>

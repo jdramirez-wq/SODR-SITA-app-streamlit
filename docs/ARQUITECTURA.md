@@ -1,7 +1,7 @@
 # Arquitectura
 
 ```
-Usuario ──> Streamlit Cloud (app.py + pages/)           ← interfaz (delgada)
+Usuario ──> Streamlit Cloud (app.py + paginas/)           ← interfaz (delgada)
                  │
                  ▼
             src/evaplan/                                  ← lógica, sin Streamlit
@@ -26,10 +26,10 @@ tests/                           pytest sobre los ejemplos ficticios
 2. **Fallar fuerte, reportar claro:** una estructura distinta detiene la lectura con un mensaje accionable.
 3. **Validar sin corregir:** las reglas devuelven hallazgos (`error`/`advertencia`/`info`) con la fila de origen;
    nunca alteran el dato.
-4. **Lógica fuera de la interfaz:** `pages/` solo llama a `src/`. Así se prueba sin abrir la app.
+4. **Lógica fuera de la interfaz:** `paginas/` solo llama a `src/`. Así se prueba sin abrir la app.
 5. **Datos reales fuera del repo** (público): ejemplos ficticios + pruebas.
 
 ## Estado de la migración
 - ✅ `src/evaplan/`: contrato de datos y validaciones de EVAPLAN + Plan Indicativo.
-- ✅ `pages/1_Auditoria_EVAPLAN.py` (Seguimiento EVAPLAN) ya es una interfaz delgada sobre `pipeline.ejecutar`.
-- ⏳ `pages/2_POAI_2027.py` conserva su lógica propia; se migrará después (ver HOJA_DE_RUTA).
+- ✅ `paginas/1_Auditoria_EVAPLAN.py` (Seguimiento EVAPLAN) ya es una interfaz delgada sobre `pipeline.ejecutar`.
+- ⏳ `paginas/2_POAI_2027.py` conserva su lógica propia; se migrará después (ver HOJA_DE_RUTA).
