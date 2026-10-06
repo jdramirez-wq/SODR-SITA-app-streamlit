@@ -27,3 +27,10 @@ def test_la_pagina_funciona_aunque_la_raiz_del_repo_no_este_en_sys_path(monkeypa
         monkeypatch.delitem(sys.modules, nombre)
     at = AppTest.from_file(str(RAIZ / "paginas" / "1_Auditoria_EVAPLAN.py"), default_timeout=30).run()
     assert not at.exception
+
+
+def test_la_app_de_prueba_arranca_desde_el_archivo_de_compatibilidad():
+    """La app de prueba de Streamlit Cloud tiene como principal pages/1_Auditoria_EVAPLAN.py (no app.py)."""
+    for nombre in ("1_Auditoria_EVAPLAN.py", "2_POAI_2027.py"):
+        at = AppTest.from_file(str(RAIZ / "pages" / nombre), default_timeout=30).run()
+        assert not at.exception

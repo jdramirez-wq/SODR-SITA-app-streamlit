@@ -1,25 +1,22 @@
-"""Punto de entrada: navegación de la plataforma de la SODR (nombres e iconos legibles en la barra lateral)."""
+"""Punto de entrada: navegación de la plataforma de la SODR (nombres e iconos legibles, barra superior)."""
 import sys
 from pathlib import Path
 
 import streamlit as st
 
-RAIZ = Path(__file__).resolve().parent
-sys.path.insert(0, str(RAIZ))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from interfaz import estilos, portada  # noqa: E402
+from interfaz import estilos, portada, rutas  # noqa: E402
 
-st.set_page_config(page_title="Plataforma SODR", page_icon=str(RAIZ / "interfaz" / "icono.svg"), layout="wide",
-                   initial_sidebar_state="expanded")
-st.logo(str(RAIZ / "interfaz" / "logo.svg"), size="large", icon_image=str(RAIZ / "interfaz" / "icono.svg"))
+st.set_page_config(page_title="Plataforma SODR", page_icon=rutas.ICONO, layout="wide", initial_sidebar_state="expanded")
+st.logo(rutas.LOGO, size="large", icon_image=rutas.ICONO)
 estilos.aplicar_estilos()
 
 paginas = {
     "": [st.Page(portada.mostrar, title="Inicio", icon=":material/home:", default=True)],
     "Trámites": [
-        st.Page("paginas/1_Auditoria_EVAPLAN.py", title="Seguimiento EVAPLAN", icon=":material/fact_check:",
-                url_path="seguimiento"),
-        st.Page("paginas/2_POAI_2027.py", title="POAI 2027", icon=":material/edit_note:", url_path="poai"),
+        st.Page(rutas.SEGUIMIENTO, title="Seguimiento EVAPLAN", icon=":material/fact_check:", url_path="Auditoria_EVAPLAN"),
+        st.Page(rutas.POAI, title="POAI 2027", icon=":material/edit_note:", url_path="POAI_2027"),
     ],
 }
 st.navigation(paginas, position="top").run()   # barra superior: siempre se puede volver al inicio

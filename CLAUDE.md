@@ -18,7 +18,11 @@ reportes. La usan compañeros del área (no programadores). Se mejora de forma i
 
 ## Estructura
 ```
-app.py                       Navegación (st.navigation): Inicio, Seguimiento EVAPLAN (/seguimiento), POAI 2027 (/poai)
+app.py                       Navegación (st.navigation, barra superior): Inicio, Seguimiento EVAPLAN (/Auditoria_EVAPLAN),
+                             POAI 2027 (/POAI_2027). Rutas absolutas en interfaz/rutas.py
+pages/                       SOLO compatibilidad: la app de prueba de Streamlit Cloud arranca desde pages/1_Auditoria_EVAPLAN.py;
+                             estos archivos cargan app.py. Las url_path coinciden con estos nombres para evitar 'Page not found'.
+                             No poner páginas reales aquí
 paginas/1_Auditoria_EVAPLAN.py SEGUIMIENTO EVAPLAN (página en foco): cruza Plan Indicativo (Drive + EVAPLAN) con
                              Centralizadas; matriz por meta, hallazgos, Excel/PDF y prompt del auditor. Interfaz
                              delgada sobre src/evaplan/pipeline.py
