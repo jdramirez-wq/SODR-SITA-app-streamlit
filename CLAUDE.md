@@ -6,6 +6,9 @@ Plataforma web en **Streamlit** (código en GitHub, despliegue en Streamlit Clou
 Plan de Desarrollo Departamental**: cruzar información de varias plataformas, auditarla y generar
 reportes. La usan compañeros del área (no programadores). Se mejora de forma incremental.
 
+**App oficial:** <https://sodr-sita-app.streamlit.app/> (rama `main`). **Repositorio:** `jdramirez-wq/SODR-SITA-app-streamlit`
+(antes `mi-primera-app-streamlit`; GitHub redirige el nombre anterior).
+
 ## Reglas críticas
 - **El repositorio es PÚBLICO.** Nunca commitear datos reales (planes, proyectos, presupuestos,
   personas), credenciales ni enlaces privados. Datos reales → Drive o `st.file_uploader`.

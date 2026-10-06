@@ -9,7 +9,7 @@ Hay dos apps en Streamlit Cloud:
 
 | App | Rama | Archivo principal | Para qué |
 |---|---|---|---|
-| **Oficial** (la que usan los compañeros) | `main` | por confirmar (ver paso 5) | Uso diario |
+| **Oficial** (la que usan los compañeros): <https://sodr-sita-app.streamlit.app/> | `main` | por confirmar (ver paso 5) | Uso diario |
 | **De prueba** (`seguimiento-evaplan-prueba`) | rama de trabajo | `pages/1_Auditoria_EVAPLAN.py` | Probar antes de publicar |
 
 ---
@@ -59,19 +59,25 @@ No hace falta borrar la rama después (GitHub lo ofrece; es opcional).
          enlace"**.
 
 ## Paso 6 (recomendado). Dirección más seria y archivo principal correcto
-Si quieres cambiar `mi-primera-app-streamlit.streamlit.app` por algo como `sodr-seguimiento.streamlit.app`:
+> **Hecho (octubre de 2026):** la app oficial quedó en <https://sodr-sita-app.streamlit.app/>. Falta confirmar que su
+> archivo principal sea `app.py` (⋮ → Logs, primera línea).
+
+Para cambiar la dirección (antes `mi-primera-app-streamlit.streamlit.app`):
 - Primero busca en **⋮ → Settings → General** si deja editar la dirección (subdominio). Si se puede, cámbiala ahí
   y listo.
 - Si no se puede (o si el archivo principal no es `app.py`), crea la app de nuevo:
   1. Copia los **Secrets** de la app oficial (paso 5.2) a un lugar seguro.
   2. **⋮ → Delete** la app oficial.
-  3. **Create app** → **Deploy a public app from GitHub** → repositorio `mi-primera-app-streamlit`, rama `main`,
+  3. **Create app** → **Deploy a public app from GitHub** → repositorio `SODR-SITA-app-streamlit`, rama `main`,
      **Main file path: `app.py`**, **App URL:** la dirección nueva.
   4. **Advanced settings:** Python 3.12 y pega los Secrets.
   5. **Deploy** y repite las verificaciones del paso 5.3.
 - Comparte la dirección nueva con los compañeros. La anterior deja de funcionar si borraste la app.
 
 ## Paso 7 (opcional, después). Nombre del repositorio
+> **Hecho (octubre de 2026):** el repositorio se llama `jdramirez-wq/SODR-SITA-app-streamlit`. Falta autorizar el
+> nombre nuevo en las sesiones de Claude para que los avisos de los PR lleguen.
+
 El nombre `mi-primera-app-streamlit` solo lo ven quienes entran a GitHub. Si quieres cambiarlo (p. ej.
 `sodr-plataforma`): GitHub → repositorio → **Settings → General → Repository name** → **Rename**.
 Consecuencias:
