@@ -24,9 +24,9 @@ def _md(texto) -> str:
 
 
 # ------------------------------------------------------------------ encabezado, cifras y acciones
-def encabezado_resultados(res, periodo: str) -> None:
+def encabezado_resultados(res, periodo) -> None:
     estilos.barra_titulo("Seguimiento", "EVAPLAN", [
-        (res.entidad, ""), (f"Vigencia {res.vigencia}", "gris"), (periodo, "gris")])
+        (res.entidad, ""), (f"Vigencia {res.vigencia}", "gris"), (periodo.etiqueta, "gris")])
 
 
 def cifras(res) -> None:
@@ -61,7 +61,7 @@ def _dialogo_prompt(texto: str) -> None:
     b.link_button("Abrir ChatGPT", "https://chatgpt.com/", width="stretch")
 
 
-def barra_acciones(res, periodo: str, con_hechos: bool, recordatorios: list[dict]) -> None:
+def barra_acciones(res, periodo, con_hechos: bool, recordatorios: list[dict]) -> None:
     excel, pdf = _entregables(res.matriz, res.hallazgos, res.calidad, res.aportes if res.usa_z023 else None,
                               res.entidad)
     c0, c1, c2, c3 = st.columns([2.6, 1.1, 1.1, 1.4], vertical_alignment="center")

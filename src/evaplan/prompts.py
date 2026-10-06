@@ -1,11 +1,16 @@
 """Prompt del auditor BOT_SODR_EVAPLAN.
 
-El texto es el que ya usaba la página de Auditoría (no se alteró), con dos cambios:
+Parte del texto que ya usaba la página de Auditoría, con estos cambios:
   1. La vigencia deja de estar fija en 2026 (parámetro `vigencia`).
-  2. Bloque opcional HECHOS_VERIFICADOS: avisa al LLM que las cifras de la matriz ya vienen calculadas por código,
+  2. El periodo es un tipo de revisión y un mes de corte (periodo.py); el bloque de temporalidad se arma con ellos.
+  3. Bloque opcional HECHOS_VERIFICADOS: avisa al LLM que las cifras de la matriz ya vienen calculadas por código,
      para que dedique su esfuerzo al juicio (coherencia narrativa, suficiencia, retroalimentación) y no a recalcular.
+  4. Convención única de cifras y recordatorios de cierre (opcionales).
 """
 
+from .periodo import Periodo, como_periodo
+
+# Nombres anteriores (se aceptan por compatibilidad; ver periodo.py).
 PERIODOS = [
     "Revisión acumulada de primer trimestre",
     "Revisión acumulada del Primer semestre",
@@ -43,7 +48,43 @@ Esta es una revisión de cierre de año. Al FINAL de cada informe agrega una sec
 """
 
 
+def bloque_periodo(p: Periodo, vigencia) -> str:
+    """Bloque de configuración de la revisión según el tipo y el mes de corte."""
+    if p.tipo == "cierre":
+        return """
+[BLOQUE DE CONFIGURACIÓN DE LA REVISIÓN]
+Nota para el GEM: El periodo de revisión corresponde al Cierre Final de la Vigencia. El juicio aquí es definitivo y estricto frente a metas anuales al 100%.
+"""
+    corte = f"acumulado de enero a {p.nombre_mes} de {vigencia} (mes {p.mes} de 12)"
+    if p.tipo == "proyectado":
+        return f"""
+[BLOQUE DE CONFIGURACIÓN DE LA REVISIÓN]
+Nota para el GEM: El periodo de revisión corresponde al precierre de la vigencia: avance {corte} y proyección de cierre que reporta la dependencia (Valor Proyectado). Analiza la ejecución real frente a la proyección de cierre.
+Periodo de Corte Actual: {p.nombre_mes} de {vigencia}, con proyección a diciembre de {vigencia}.
+
+Lógica de Temporalidad: el resultado acumulado aún puede crecer, pero la proyección de cierre debe ser coherente con lo ejecutado y con la meta anual. Una proyección por debajo de la meta exige explicación en Dificultades; una proyección muy por encima de lo ejecutado debe sustentarse en la narrativa.
+"""
+    texto = f"""
+[BLOQUE DE CONFIGURACIÓN DE LA REVISIÓN]
+Nota para el GEM: El usuario te indica que el periodo de revisión es un corte PARCIAL: avance {corte}. Adapta tu juicio a esta temporalidad.
+Periodo de Corte Actual: acumulado a {p.nombre_mes} de {vigencia}.
+
+Lógica de Temporalidad: Al ser un reporte parcial, no se exige el 100% del cumplimiento final de la meta anual. Se evalúa que el avance reportado (físico y financiero) sea coherente con los meses transcurridos. Un reporte de 100% en un corte temprano debe ser revisado con extrema lupa, y un reporte de 0% con alta ejecución financiera requiere justificación de etapa precontractual.
+Aclaración: Si en reportes parciales se registra 100% de avance, la descripción cualitativa debe ayudar a entender cómo se consiguió ese nivel de avance. También se debería aclarar que la meta busca un sostenimiento o continuidad en el producto (bien o servicio) que está entregando, de modo que, si ya alcanzó el 100% en este corte, pues se va a mantener ese nivel de entrega; o si por el contrario, ya no se va a entregar nada más.
+"""
+    if p.mes == 6:
+        texto += ("Para el corte a junio (mitad de año) se espera una ejecución física cercana al 40%-50% o una "
+                  "justificación contractual clara si es menor.\n")
+    if p.mes >= 6:
+        texto += ("Para los casos donde en este corte ya se alcanzó el valor esperado del 100% anual y ya no se va a "
+                  "entregar más producto, es un dato crítico porque supone que ya no se debería ejecutar más recurso "
+                  "(contratar para la ejecución de actividades ligadas a esa meta) a través de esa MP. Este es un dato "
+                  "relevante que debe hacerse notar para que lo tengan en cuenta los enlaces SODR.\n")
+    return texto
+
+
 def generar_prompt_sistema(periodo, vigencia=2026, con_hechos=True, recordatorios=None):
+    """`periodo`: un `Periodo` (tipo y mes de corte) o uno de los nombres anteriores de PERIODOS."""
     perfil_mision = """PERFIL Y MISIÓN DEL AGENTE
 
 Actúa como BOT_SODR_EVAPLAN, mi Asesor Experto en Auditoría de Seguimiento a Planes de Desarrollo Territorial. Estás adscrito a la Subdirección de Ordenamiento y Desarrollo Regional (SODR) del Departamento Administrativo de Planeación de la Gobernación del Valle del Cauca.
@@ -133,38 +174,7 @@ Si has asimilado todas estas reglas, comprendes la importancia de la temporalida
 "Entendido. Soy BOT_SODR_EVAPLAN, tu auditor técnico experto. He configurado la temporalidad y el sistema de alertas. Por favor, indícame el Periodo de Corte y carga los datos de las metas o el archivo integrado para iniciar la auditoría rigurosa."
 """
 
-    if periodo == "Revisión acumulada de primer trimestre":
-        bloque_config = f"""
-[BLOQUE DE CONFIGURACIÓN DE LA REVISIÓN]
-Nota para el GEM: El usuario te indica que el periodo de revisión corresponde al Primer Trimestre de la vigencia. Adapta tu juicio a esta temporalidad.
-Periodo de Corte Actual: Primer Trimestre de {vigencia} (Q1 {vigencia}).
-
-Lógica de Temporalidad: Al ser un reporte trimestral parcial, no se exige el 100% del cumplimiento final de la meta anual. Se evalúa que el avance reportado (físico y financiero) sea coherente con los primeros meses del año. Un reporte de 100% en Q1 debe ser revisado con extrema lupa, y un reporte de 0% con alta ejecución financiera requiere justificación de etapa precontractual.
-Aclaración: Si en reportes parciales se registra 100% de avance, la descripción cualitativa debe ayudar a entender cómo se consiguió ese nivel de avance. También se debería aclarar que la meta busca un sostenimiento o continuidad en el producto (bien o servicio) que está entregando, de modo que, si ya alcanzó el 100% en Q1 (por ejemplo), pues se va a mantener ese nivel de entrega; o si por el contrario, ya no se va a entregar nada más. 
-"""
-    elif periodo == "Revisión acumulada del Primer semestre":
-        bloque_config = f"""
-[BLOQUE DE CONFIGURACIÓN DE LA REVISIÓN]
-Nota para el GEM: El usuario te indica que el periodo de revisión corresponde al Primer Semestre acumulado. Adapta tu juicio a esta temporalidad de mitad de año.
-Periodo de Corte Actual: Primer Semestre de {vigencia} (Q2 {vigencia}).
-
-Lógica de Temporalidad: Al ser un reporte acumulado a mitad de año (Corte a Junio), se espera una ejecución física cercana al 40%-50% o una justificación contractual clara si es menor. Para los casos donde en Q2 ya se alcanzó el valor esperado del 100% anual y ya no se va a entregar más producto, es un dato crítico porque supone que ya no se debería ejecutar más recurso (contratar para la ejecución de actividades ligadas a esa meta) a través de esa MP. Este es un dato relevante que debe hacerse notar para que lo tengan en cuenta los enlaces SODR.
-"""
-    elif periodo == "Revisión Acumulada de Tercer Semestre":
-        bloque_config = """
-[BLOQUE DE CONFIGURACIÓN DE LA REVISIÓN]
-Nota para el GEM: El periodo de revisión corresponde a la revisión acumulada de Tercer Semestre (Periodo extendido multianual o ajuste de ciclo). 
-"""
-    elif periodo == "Revisión Acumulada y Proyectada a Cierre de Vigencia":
-        bloque_config = """
-[BLOQUE DE CONFIGURACIÓN DE LA REVISIÓN]
-Nota para el GEM: El periodo de revisión pferece al precierre de la vigencia, analizando la ejecución real frente a proyecciones de cierre.
-"""
-    else:
-        bloque_config = """
-[BLOQUE DE CONFIGURACIÓN DE LA REVISIÓN]
-Nota para el GEM: El periodo de revisión corresponde al Cierre Final de la Vigencia. El juicio aquí es definitivo y estricto frente a metas anuales al 100%.
-"""
+    bloque_config = bloque_periodo(como_periodo(periodo), vigencia)
 
     hechos = HECHOS_VERIFICADOS if con_hechos else ""
     return (perfil_mision + bloque_config + contexto_usuario + hechos + bloque_recordatorios(recordatorios) + reglas_oro

@@ -18,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from interfaz import estilos, seguimiento as vista
 from src.evaplan import pipeline
 from src.evaplan.lectura import EsquemaError
-from src.evaplan.prompts import PERIODOS
+from src.evaplan.periodo import MESES, TIPOS, Periodo, mes_por_defecto
 from src.evaplan.recordatorios import recordatorios_cierre
 from src.evaplan.version import version_codigo
 
@@ -44,9 +44,19 @@ def _descargar_drive(url: str) -> bytes:
 
 # ------------------------------------------------------------------ barra lateral (solo lo esencial)
 st.sidebar.markdown("### Configuración de la revisión")
-periodo = st.sidebar.selectbox(
-    "Periodo de revisión", PERIODOS,
-    help="Ajusta el texto del prompt. En los periodos de cierre aparecen además los recordatorios de certificados.")
+tipo_revision = st.sidebar.radio(
+    "Tipo de revisión", list(TIPOS), format_func=lambda t: {"parcial": "Corte parcial",
+                                                             "proyectado": "Proyección de cierre",
+                                                             "cierre": "Cierre definitivo"}[t],
+    help="Corte parcial: avance acumulado a un mes. Proyección de cierre: acumulado más la proyección que reporta la "
+         "dependencia. Cierre definitivo: fin de la vigencia. Ajusta el prompt; en los dos últimos aparecen los "
+         "recordatorios de certificados.")
+mes_corte = 12
+if tipo_revision != "cierre":
+    mes_corte = st.sidebar.select_slider("Acumulado hasta", options=list(range(1, 13)), value=mes_por_defecto(),
+                                         format_func=lambda m: MESES[m - 1].capitalize())
+periodo = Periodo(tipo_revision, mes_corte)
+st.sidebar.caption(f"Revisión: **{periodo.etiqueta}**")
 with st.sidebar.expander("Opciones avanzadas"):
     vigencia_manual = st.number_input(
         "Vigencia (0 = detectar sola)", min_value=0, max_value=2027, value=0, step=1,

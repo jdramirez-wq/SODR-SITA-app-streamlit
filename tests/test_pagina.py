@@ -12,7 +12,8 @@ def test_pagina_de_seguimiento_carga_sin_archivos():
     assert not at.exception
     boton = next(b for b in at.button if b.label == "Procesar")
     assert boton.disabled                                      # sin los dos archivos no se puede procesar
-    assert at.sidebar.selectbox[0].options[0].startswith("Revisión acumulada")
+    assert at.sidebar.radio[0].options == ["Corte parcial", "Proyección de cierre", "Cierre definitivo"]
+    assert at.sidebar.select_slider[0].value in range(1, 13)        # mes de corte
 
 
 def test_portada_carga():

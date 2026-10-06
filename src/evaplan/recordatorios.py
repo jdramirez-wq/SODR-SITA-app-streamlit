@@ -2,7 +2,7 @@
 
 No son hallazgos sobre lo que reportó la entidad: son pendientes de la persona que revisa (certificados que el
 sistema no trae). Se muestran en la página y se agregan al prompt para que el LLM los repita como advertencia al
-final de su informe. Solo aplican en los periodos de cierre (ver `PERIODOS_CIERRE`).
+final de su informe. Solo aplican en las revisiones de cierre (definitivo o proyectado; ver `periodo.Periodo.es_cierre`).
 
 Reglas (confirmadas por el equipo, 6-oct; el detalle de los certificados está por definir):
   - Entidades descentralizadas: registran ellas mismas su información financiera (no viene de SAP), así que a
@@ -15,13 +15,12 @@ from __future__ import annotations
 import pandas as pd
 
 from .aportes import PREFIJO_DESCENTRALIZADA
-from .prompts import PERIODOS
-
-PERIODOS_CIERRE = tuple(PERIODOS[3:])      # "…Proyectada a Cierre de Vigencia" y "Revisión a Cierre de Vigencia"
+from .periodo import como_periodo
 
 
-def es_cierre(periodo: str) -> bool:
-    return periodo in PERIODOS_CIERRE
+def es_cierre(periodo) -> bool:
+    """Cierre definitivo o proyección de cierre (`periodo`: Periodo o nombre anterior)."""
+    return como_periodo(periodo).es_cierre
 
 
 def detectar_descentralizada(centralizadas: pd.DataFrame, codigos_entidad, equivalencias: dict[str, str]) -> bool:
@@ -37,7 +36,7 @@ def detectar_descentralizada(centralizadas: pd.DataFrame, codigos_entidad, equiv
     return bool(len(actividades)) and bool((~actividades.str.contains("/")).mean() >= 0.5)
 
 
-def recordatorios_cierre(periodo: str, matriz: pd.DataFrame, es_descentralizada: bool = False,
+def recordatorios_cierre(periodo, matriz: pd.DataFrame, es_descentralizada: bool = False,
                          aportes: pd.DataFrame | None = None) -> list[dict]:
     """Lista de {id, titulo, texto, metas}. Vacía si el periodo no es de cierre."""
     if not es_cierre(periodo):

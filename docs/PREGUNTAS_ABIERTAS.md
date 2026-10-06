@@ -46,7 +46,8 @@ Cuando se resuelva una, se mueve a [REGLAS_DE_NEGOCIO.md](REGLAS_DE_NEGOCIO.md) 
 ## Decisiones de producto
 5. **Prompt:** el bloque opcional "Hechos verificados" queda **activado por defecto** (se puede desmarcar en la barra
    lateral). Se revisa cuando el equipo compare respuestas del LLM con y sin el bloque.
-6. **Periodo de revisión:** hoy solo cambia el texto del prompt. ¿Se muestra además una referencia neutral de
+6. **Periodo de revisión:** ahora es tipo de revisión (corte parcial, proyección de cierre, cierre definitivo) + mes de corte
+   (7-oct). Sigue abierto: hoy solo cambia el texto del prompt y los recordatorios. ¿Se muestra además una referencia neutral de
    tiempo transcurrido (25 %, 50 %…) junto al avance? No sería umbral: solo contexto.
 7. **Histórico:** ¿interesa guardar cada corte para ver la evolución de una dependencia?
 

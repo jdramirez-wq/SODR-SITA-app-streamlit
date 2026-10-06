@@ -33,7 +33,7 @@ interfaz/                    Componentes visuales de Streamlit: estilos.py (pale
                              página). Solo dibujan; qué se muestra lo decide src/evaplan/vista.py (probado). Tema en .streamlit/config.toml
 src/evaplan/                 Contrato de datos (SIN Streamlit): esquemas.py (diccionario), limpieza.py,
                              lectura.py (lectores tipados), validaciones.py (reglas y cruces), seguimiento.py
-                             (matriz por meta), aportes.py (proyectos por meta desde el Z023), recordatorios.py (cierre de año),
+                             (matriz por meta), aportes.py (proyectos por meta desde el Z023), recordatorios.py (cierre de año), periodo.py,
                              reportes.py (Excel/PDF), prompts.py, pipeline.py (orquestador)
 scripts/                     generar_diccionario.py (docs desde esquemas), generar_ejemplos.py (datos ficticios)
 tests/                       pytest sobre los ejemplos ficticios de data/ejemplos/
@@ -94,7 +94,10 @@ python scripts/generar_ejemplos.py      # regenera los archivos ficticios
 - **Descentralizadas:** misma estructura de archivos que las centrales, pero su código de entidad difiere entre EVAPLAN (1216)
   y el Z023 (0006): se enlazan por nombre (`aportes.equivalencias_z023`). Su actividad es el código PPM (sin `/`) y su Plan de
   Acción incluye proyectos de otras dependencias. Lo propio/ajeno se decide por el código en el Z023.
-- **Recordatorios de cierre** (`recordatorios.py`): solo en periodos de cierre. Certificado financiero de descentralizadas y
+- **Periodo de revisión** (`periodo.py`): tipo (`parcial`, `proyectado`, `cierre`) + mes de corte (1-12; por defecto el último mes
+  cerrado). El bloque de temporalidad del prompt se arma con ellos (conserva los textos del equipo para junio y cortes tempranos).
+  Los nombres de periodo anteriores se aceptan por compatibilidad (`como_periodo`).
+- **Recordatorios de cierre** (`recordatorios.py`): solo en revisiones de cierre (proyectado o definitivo). Certificado financiero de descentralizadas y
   certificado del avance por gestión (todas). No son hallazgos: van a la página y al prompt como advertencia.
 - **Información no pública:** no guardar el Z023 consolidado ni datos similares en el repo ni en carpetas de lectura
   abierta; se subirían por sesión (`st.file_uploader`) y solo se usan en memoria.
