@@ -6,11 +6,12 @@ import streamlit as st
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from interfaz import estilos, portada, rutas  # noqa: E402
+from interfaz import estilos, memoria, portada, rutas  # noqa: E402
 
 st.set_page_config(page_title="Plataforma SODR", page_icon=rutas.ICONO, layout="wide", initial_sidebar_state="expanded")
 st.logo(rutas.LOGO, size="large", icon_image=rutas.ICONO)
 estilos.aplicar_estilos()
+memoria.conservar_en_direccion()   # si hay resultados guardados, la dirección conserva su clave en todas las páginas
 
 paginas = {
     "": [st.Page(portada.mostrar, title="Inicio", icon=":material/home:", default=True)],
