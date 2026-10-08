@@ -60,7 +60,8 @@ class Esquema:
 # ---------------------------------------------------------------- Vocabularios controlados
 COMPORTAMIENTOS = {
     "Incremento Acumulado": "El PG es la SUMA de las metas anuales.",
-    "Incremento Capacidad": "Observado: el PG es la SUMA de las metas anuales (por confirmar).",
+    "Incremento Capacidad": "La base aumenta gradualmente: cada año es el NIVEL alcanzado y el PG es el valor del ÚLTIMO "
+                            "año (2027); se mide con el resultado del último año (confirmado, guía de indicadores del DNP).",
     "Incremento Flujo": "El PG es el valor del ÚLTIMO año (2027); cada año se mide por separado.",
     "Mantenimiento Stock": "Se mantiene un nivel: todos los años igualan al PG.",
     "Reducción Anual": "Solo en Metas de Resultado: el indicador debe bajar (por confirmar regla del PG).",

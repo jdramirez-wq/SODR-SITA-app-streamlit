@@ -18,7 +18,9 @@ from . import formato as F
 from .esquemas import FOCALIZACION
 from .validaciones import ANIOS, COLUMNAS_HALLAZGO, inferir_vigencia
 
-COMPORTAMIENTOS_ACUMULATIVOS = ("Incremento Acumulado", "Incremento Capacidad")
+COMPORTAMIENTOS_ACUMULATIVOS = ("Incremento Acumulado",)        # avance del cuatrienio = Σ logros previos + Resultado
+COMPORTAMIENTOS_DE_NIVEL = ("Incremento Capacidad",)              # avance del cuatrienio = Resultado (nivel alcanzado)
+COMPORTAMIENTOS_CRECIENTES = COMPORTAMIENTOS_ACUMULATIVOS + COMPORTAMIENTOS_DE_NIVEL   # no pueden bajar en el año
 _RE_GESTION = re.compile(r"gesti[oó]n|donaci[oó]n|cofinanci|sin\s+costo", re.IGNORECASE)
 
 # Promedio de avance de actividades que PRIMA para el análisis: el de TODAS las actividades (registros) de la meta, como
@@ -177,7 +179,10 @@ def construir_matriz(pi_mp: pd.DataFrame, centralizadas: pd.DataFrame, drive_mp:
         proyectado = _num(r["valor_proyectado"]) if r is not None else pd.NA
         pct_proy = (proyectado / float(meta)) if not _na(proyectado) and not _na(meta) and float(meta) > 0 else pd.NA
         pct_vig = (resultado / float(meta)) if not _na(resultado) and not _na(meta) and float(meta) > 0 else pd.NA
-        avance_cuat = (logro_previo + resultado) if not _na(logro_previo) and not _na(resultado) else pd.NA
+        if comp in COMPORTAMIENTOS_DE_NIVEL:      # Capacidad: cada año es el nivel alcanzado; se mide con el último
+            avance_cuat = resultado
+        else:
+            avance_cuat = (logro_previo + resultado) if not _na(logro_previo) and not _na(resultado) else pd.NA
         pct_pg = (avance_cuat / float(pg)) if not _na(avance_cuat) and not _na(pg) and float(pg) > 0 else pd.NA
 
         p = plan.loc[mp] if len(plan) and mp in plan.index else None
@@ -323,7 +328,7 @@ def detectar_hallazgos(m: pd.DataFrame, criterio_flexible: bool = False) -> pd.D
         if not _na(proy) and not _na(f["meta_vigencia"]) and not f["meta_vigencia_np"] and proy < f["meta_vigencia"]:
             add("proyeccion_bajo_meta", "advertencia", f,
                 f"La dependencia proyecta cerrar en {F.numero(proy)}, por debajo de la meta de la vigencia ({F.numero(f['meta_vigencia'])})")
-        if not _na(proy) and proy < res and f["comportamiento"] in COMPORTAMIENTOS_ACUMULATIVOS:
+        if not _na(proy) and proy < res and f["comportamiento"] in COMPORTAMIENTOS_CRECIENTES:
             add("proyeccion_menor_que_resultado", "advertencia", f,
                 f"La proyección de cierre ({F.numero(proy)}) es menor que el resultado ya acumulado ({F.numero(res)})")
         if not _na(f["pct_avance_vigencia"]) and f["pct_avance_vigencia"] > 1:

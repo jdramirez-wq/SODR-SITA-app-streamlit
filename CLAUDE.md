@@ -82,6 +82,10 @@ python scripts/generar_ejemplos.py      # regenera los archivos ficticios
 - `Resultado` = último reporte **acumulado de la vigencia**. `Valor Proyectado` = proyección de cierre de la
   dependencia (campo creado nov-2025; puede venir vacío; misma escala que la meta de la vigencia).
 - Alcance actual: solo **metas de producto** (MP). Las metas de resultado (MR) quedan fuera por ahora.
+- **Comportamiento del indicador** (`seguimiento.py`, `pg_vs_anios`): *Acumulado* = los años se suman (avance = logros
+  previos + Resultado); *Capacidad* = la base aumenta gradualmente, cada año es el nivel alcanzado y se mide con el último
+  resultado (PG = 2027; avance = Resultado), confirmado con la guía del DNP; *Flujo* = PG es 2027, sin avance del cuatrienio;
+  *Mantenimiento* = todos los años igual al PG.
 - **Centralizadas:** cada fila es un REGISTRO presupuestal (llave `id_registro`); el código de actividad se repite. Los
   presupuestos se suman y el avance se promedia por registro.
 - **PA ≠ PI:** el PA (Centralizadas) lo reporta el centro gestor del proyecto; el PI (metas) solo el coordinador de la meta.

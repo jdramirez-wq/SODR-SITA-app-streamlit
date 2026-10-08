@@ -83,6 +83,8 @@ def test_llave_duplicada_y_codigo_mp_invalido(fuentes):
     ("Incremento Acumulado", 10, [4, 4, 3, 3], True),
     ("Incremento Flujo", 90, [70, 80, 85, 90], False),
     ("Incremento Flujo", 90, [70, 80, 85, 60], True),
+    ("Incremento Capacidad", 25, [4, 11, 18, 25], False),   # nivel alcanzado cada año; PG = 2027
+    ("Incremento Capacidad", 200, [50, 50, 50, 50], True),   # escrito como incrementos que se suman
     ("Mantenimiento Stock", 100, [100, 100, 100, 100], False),
     ("Mantenimiento Stock", 100, [100, 90, 100, 100], True),
     ("Reducción Anual", 5, [9, 8, 7, 6], False),            # no se valida

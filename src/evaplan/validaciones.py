@@ -147,7 +147,7 @@ def pg_vs_anios(df: pd.DataFrame, fuente: str, prefijo: str = "valor", llave: st
     Aplica a PROGRAMACIÓN (prefijo 'pi', bloque original de Drive). NO aplicarla al bloque vigente ('valor'),
     porque las vigencias cerradas traen el logro alcanzado y no la meta: daría falsas alarmas.
 
-    Incremento Acumulado / Capacidad: PG = suma de años.  Incremento Flujo: PG = último año.
+    Incremento Acumulado: PG = suma de años.  Incremento Flujo y Capacidad: PG = último año (2027).
     Mantenimiento Stock: todos los años = PG.  'Reducción Anual' no se valida.
     """
     h = []
@@ -158,10 +158,10 @@ def pg_vs_anios(df: pd.DataFrame, fuente: str, prefijo: str = "valor", llave: st
         anios = [r[f"{prefijo}_{a}"] for a in ANIOS]
         valores = [0.0 if _na(v) else float(v) for v in anios]
         msg = None
-        if comp in ("Incremento Acumulado", "Incremento Capacidad"):
+        if comp == "Incremento Acumulado":
             if not _cerca(sum(valores), pg):
                 msg = f"{comp}: suma de años = {_fmt(sum(valores))} distinto de PG {_fmt(pg)}"
-        elif comp == "Incremento Flujo":
+        elif comp in ("Incremento Flujo", "Incremento Capacidad"):
             if not _na(anios[-1]) and not _cerca(anios[-1], pg):
                 msg = f"{comp}: valor 2027 = {_fmt(anios[-1])} distinto de PG {_fmt(pg)}"
         elif comp == "Mantenimiento Stock":

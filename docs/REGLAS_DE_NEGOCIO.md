@@ -64,7 +64,7 @@ informe. Función: `recordatorios.recordatorios_cierre`. El detalle de los certi
 ## Indicadores
 | Id | Regla | Estado | Severidad | Función |
 |---|---|---|---|---|
-| I1 | Acumulado: PG = suma de años. Flujo: PG = valor 2027. Mantenimiento: todos los años = PG | ❓ | advertencia | `pg_vs_anios` |
+| I1 | Acumulado: PG = suma de años. Flujo y **Capacidad**: PG = valor 2027. Mantenimiento: todos los años = PG | ✅ (Capacidad confirmada 8-oct) | advertencia | `pg_vs_anios` |
 | I2 | Se aplica solo a la **programación** (bloque original); nunca al bloque vigente (trae logros) | ✅ | — | `validar_todo` |
 | I3 | `NP` (No Programado) no es 0: se conserva como marca aparte | ✅ | — | `limpieza.valor_np` |
 
@@ -89,7 +89,7 @@ Se calculan **hechos**, sin umbrales: no existe un cronograma único de ejecuci�
 |---|---|---|---|---|
 | S1 | Vigencia en curso = primer año del Plan Indicativo sin `VAL ALC` en el encabezado | ✅ | — | `inferir_vigencia` |
 | S2 | `% avance vs meta vigencia = Resultado / meta de la vigencia` (meta > 0) | ✅ | — | columna |
-| S3 | Acumulado/Capacidad: `avance cuatrienio = Σ logros de vigencias cerradas + Resultado`; `% vs PG` | ✅ ❓1 | — | columnas |
+| S3 | Acumulado: `avance cuatrienio = Σ logros de vigencias cerradas + Resultado`. **Capacidad**: la base aumenta gradualmente y se mide con el último resultado: `avance cuatrienio = Resultado` (nivel alcanzado); `% vs PG` en ambos | ✅ ❓1 | — | columnas |
 | S4 | `% ejecución financiera = Σ obligaciones / Σ definitivo` de las actividades de la meta | ✅ | — | columna |
 | S5 | Avance de actividades: promedio global **y por proyecto de inversión** (el prompt lo exige por proyecto) | ✅ | — | `avance_por_proyecto` |
 | S6 | Meta del Plan Indicativo sin reporte en EVAPLAN | ✅ ❓ | advertencia | `sin_reporte` |
