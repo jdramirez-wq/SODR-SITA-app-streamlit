@@ -189,7 +189,7 @@ Libro maestro del Plan Indicativo 2024-2027: todas las metas de producto de TODA
 | 5 | `Línea Programa` | `programa` | codigo_nombre (2 columnas) | no | Programa del PDD. |  |
 | 6 | `Meta Resultado Asociada` | `meta_resultado` | codigo_nombre (2 columnas) | no | MR a la que aporta la MP. |  |
 | 7 | `Subprograma` | `subprograma` | codigo_nombre (2 columnas) | no | Subprograma. |  |
-| 8 | `Indicador Principal` | `indicador_principal` | texto | sí | Indicador principal. |  |
+| 8 | `Indicador Principal` | `indicador_principal` | texto | sí | Marca Sí/No: si la meta es el indicador principal (no es el nombre del indicador). |  |
 | 22 | `Unidad de medida` | `unidad_medida` | texto | no | Unidad de medida. |  |
 | 23 | `Comportamiento` | `comportamiento` | texto | no | Tipo de indicador. | Hay variantes de mayúsculas ('Incremento flujo'): se normalizan. |
 | 24 | `Valor Linea Base` | `linea_base` | decimal | sí | Línea base. | Contiene 'NO DISPONIBLE' en algunas filas. |
