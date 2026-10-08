@@ -180,6 +180,7 @@ def construir_matriz(pi_mp: pd.DataFrame, centralizadas: pd.DataFrame, drive_mp:
         pct_proy = (proyectado / float(meta)) if not _na(proyectado) and not _na(meta) and float(meta) > 0 else pd.NA
         pct_vig = (resultado / float(meta)) if not _na(resultado) and not _na(meta) and float(meta) > 0 else pd.NA
         if comp in COMPORTAMIENTOS_DE_NIVEL:      # Capacidad: cada año es el nivel alcanzado; se mide con el último
+            # (sin descontar la línea base: decisión provisional, ver docs/PREGUNTAS_ABIERTAS.md 2b)
             avance_cuat = resultado
         else:
             avance_cuat = (logro_previo + resultado) if not _na(logro_previo) and not _na(resultado) else pd.NA
