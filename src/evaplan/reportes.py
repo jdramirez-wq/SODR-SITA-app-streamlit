@@ -188,6 +188,9 @@ def _bloque_meta(f, n: int, total: int, alertas: pd.DataFrame | None) -> list:
         out += [_dato("Logro acumulado de vigencias anteriores", F.numero(f["logro_previo"])),
                 _dato("Meta del cuatrienio (PG)", F.numero(f["pg"])),
                 _dato("Avance frente a la meta del cuatrienio", F.porcentaje(f["pct_avance_pg"]))]
+    elif f["comportamiento"] == "Incremento Capacidad":     # se mide con el nivel alcanzado (último resultado)
+        out += [_dato("Meta del cuatrienio (PG, nivel a alcanzar en 2027)", F.numero(f["pg"])),
+                _dato("Avance frente a la meta del cuatrienio (nivel alcanzado / PG)", F.porcentaje(f["pct_avance_pg"]))]
 
     out.append(Paragraph("2. PLAN DE ACCIÓN (actividades de los proyectos de inversión)", _EST["seccion"]))
     if not f["tiene_plan_de_accion"]:

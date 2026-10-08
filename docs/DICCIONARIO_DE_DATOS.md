@@ -189,7 +189,7 @@ Libro maestro del Plan Indicativo 2024-2027: todas las metas de producto de TODA
 | 5 | `Línea Programa` | `programa` | codigo_nombre (2 columnas) | no | Programa del PDD. |  |
 | 6 | `Meta Resultado Asociada` | `meta_resultado` | codigo_nombre (2 columnas) | no | MR a la que aporta la MP. |  |
 | 7 | `Subprograma` | `subprograma` | codigo_nombre (2 columnas) | no | Subprograma. |  |
-| 8 | `Indicador Principal` | `indicador_principal` | texto | sí | Indicador principal. |  |
+| 8 | `Indicador Principal` | `indicador_principal` | texto | sí | Marca Sí/No: si la meta es el indicador principal (no es el nombre del indicador). |  |
 | 22 | `Unidad de medida` | `unidad_medida` | texto | no | Unidad de medida. |  |
 | 23 | `Comportamiento` | `comportamiento` | texto | no | Tipo de indicador. | Hay variantes de mayúsculas ('Incremento flujo'): se normalizan. |
 | 24 | `Valor Linea Base` | `linea_base` | decimal | sí | Línea base. | Contiene 'NO DISPONIBLE' en algunas filas. |
@@ -300,7 +300,7 @@ Valores esperados en columnas categóricas. Un valor fuera de la lista debe revi
 | Valor | Significado |
 |---|---|
 | `Incremento Acumulado` | El PG es la SUMA de las metas anuales. |
-| `Incremento Capacidad` | Observado: el PG es la SUMA de las metas anuales (por confirmar). |
+| `Incremento Capacidad` | La base aumenta gradualmente: cada año es el NIVEL alcanzado y el PG es el valor del ÚLTIMO año (2027); se mide con el resultado del último año (confirmado, guía de indicadores del DNP). |
 | `Incremento Flujo` | El PG es el valor del ÚLTIMO año (2027); cada año se mide por separado. |
 | `Mantenimiento Stock` | Se mantiene un nivel: todos los años igualan al PG. |
 | `Reducción Anual` | Solo en Metas de Resultado: el indicador debe bajar (por confirmar regla del PG). |

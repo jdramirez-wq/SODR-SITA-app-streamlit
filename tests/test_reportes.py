@@ -61,3 +61,15 @@ def test_excel_porcentajes_en_escala_0_100_y_hoja_leeme(res):
 def test_prompt_explica_la_convencion_y_no_habla_de_decimales():
     p = generar_prompt_sistema("Revisión a Cierre de Vigencia", 2026, False)
     assert "CÓMO LEER LAS CIFRAS" in p and "0.2 =20%" not in p and "No los recalcules ni los multipliques por 100" in p
+
+
+def test_pdf_de_capacidad_muestra_el_avance_del_cuatrienio_por_nivel():
+    from src.evaplan import lectura as L
+    from src.evaplan import seguimiento as S
+    ej = Path(__file__).resolve().parent.parent / "data" / "ejemplos"
+    pi, ce, dr = (L.leer_pi_mp_evaplan(ej / "ejemplo_PI_MP_evaplan.xlsx"), L.leer_centralizadas(ej / "ejemplo_Centralizadas.xlsx"),
+                  L.leer_pi_drive_mp(ej / "ejemplo_PI_Drive.xlsx"))
+    for d in (pi, dr):
+        d.loc[d["codigo_mp"] == "MP9900101019901001", "comportamiento"] = "Incremento Capacidad"
+    texto = "".join(p.extract_text() for p in PdfReader(io.BytesIO(reportes.a_pdf(S.construir_matriz(pi, ce, dr)))).pages)
+    assert "nivel alcanzado / PG" in texto and "12,0 %" in texto

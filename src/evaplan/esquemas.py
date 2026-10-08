@@ -60,7 +60,8 @@ class Esquema:
 # ---------------------------------------------------------------- Vocabularios controlados
 COMPORTAMIENTOS = {
     "Incremento Acumulado": "El PG es la SUMA de las metas anuales.",
-    "Incremento Capacidad": "Observado: el PG es la SUMA de las metas anuales (por confirmar).",
+    "Incremento Capacidad": "La base aumenta gradualmente: cada año es el NIVEL alcanzado y el PG es el valor del ÚLTIMO "
+                            "año (2027); se mide con el resultado del último año (confirmado, guía de indicadores del DNP).",
     "Incremento Flujo": "El PG es el valor del ÚLTIMO año (2027); cada año se mide por separado.",
     "Mantenimiento Stock": "Se mantiene un nivel: todos los años igualan al PG.",
     "Reducción Anual": "Solo en Metas de Resultado: el indicador debe bajar (por confirmar regla del PG).",
@@ -319,7 +320,8 @@ PI_DRIVE_MP = Esquema(
         Campo("programa", "Línea Programa", "codigo_nombre", "Programa del PDD.", pos=4),
         Campo("meta_resultado", "Meta Resultado Asociada", "codigo_nombre", "MR a la que aporta la MP.", pos=5),
         Campo("subprograma", "Subprograma", "codigo_nombre", "Subprograma.", pos=6),
-        Campo("indicador_principal", "Indicador Principal", "texto", "Indicador principal.", nulo=True, pos=7),
+        Campo("indicador_principal", "Indicador Principal", "texto",
+              "Marca Sí/No: si la meta es el indicador principal (no es el nombre del indicador).", nulo=True, pos=7),
         Campo("unidad_medida", "Unidad de medida", "texto", "Unidad de medida.", pos=21),
         Campo("comportamiento", "Comportamiento", "texto", "Tipo de indicador.", pos=22,
               notas="Hay variantes de mayúsculas ('Incremento flujo'): se normalizan."),

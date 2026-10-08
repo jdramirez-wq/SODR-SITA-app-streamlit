@@ -1,5 +1,7 @@
 # Cómo probar una rama en Streamlit sin tocar lo que usan tus compañeros
 
+> **App oficial:** <https://sodr-sita-app.streamlit.app/> (rama `main`). **Repositorio:** `jdramirez-wq/SODR-SITA-app-streamlit`.
+
 Una **rama** de GitHub es una copia de trabajo del proyecto. La app que usan tus compañeros se publica desde `main`;
 mientras los cambios estén en otra rama, **nada de lo publicado cambia**. Para probar, publicas una **segunda app**
 (de prueba) que lee esa rama.
@@ -8,7 +10,7 @@ mientras los cambios estén en otra rama, **nada de lo publicado cambia**. Para 
 
 1. Entra a <https://share.streamlit.io> con la cuenta de GitHub dueña del repositorio.
 2. **Create app → Deploy a public app from GitHub** y completa:
-   - **Repository:** `jdramirez-wq/mi-primera-app-streamlit`
+   - **Repository:** `jdramirez-wq/SODR-SITA-app-streamlit`
    - **Branch:** la rama a probar (p. ej. `claude/determined-thompson-6vlmqe`)
    - **Main file path:** `app.py`
    - **App URL:** un nombre distinto al de la app oficial (p. ej. `seguimiento-evaplan-prueba`)
@@ -23,18 +25,19 @@ mientras los cambios estén en otra rama, **nada de lo publicado cambia**. Para 
 5. Cada vez que se suba un cambio a esa rama, la app de prueba se actualiza sola.
 
 > El enlace de despliegue directo (puede variar según la versión de Streamlit):
-> `https://share.streamlit.io/deploy?repository=jdramirez-wq/mi-primera-app-streamlit&branch=<RAMA>&mainModule=app.py`
+> `https://share.streamlit.io/deploy?repository=jdramirez-wq/SODR-SITA-app-streamlit&branch=<RAMA>&mainModule=app.py`
 
 ### Que el secreto funcione: el libro debe poder leerse sin iniciar sesión
 Streamlit lee el libro **sin tu sesión de Google**. Compruébalo así: abre el enlace de exportación en una ventana de
 incógnito.
 - **Se descarga un `.xlsx`** → funciona.
 - **Pide iniciar sesión o da error** → en Drive: *Compartir → Acceso general → "Cualquier persona con el enlace" →
-  Lector*. (Si no quieres abrir el libro, deja el secreto vacío y sube el libro a mano en el cuadro 3 de la página.)
+  Lector*. (Si no quieres abrir el libro, deja el secreto vacío y súbelo a mano en "Agregar fuentes opcionales".)
 
 ### Qué ver en la app de prueba
-En la barra lateral debe decir **"✅ Conectado por enlace"**. Si dice "⚠️ Sin enlace configurado", el secreto no se guardó
-(Settings → Secrets en la app) o tiene un error de comillas.
+En Seguimiento EVAPLAN, debajo de "Archivos de la dependencia", debe decir **"Plan Indicativo de Drive conectado por
+enlace."** Si dice "Sin enlace al Plan Indicativo de Drive", el secreto no se guardó (Settings → Secrets en la app) o
+tiene un error de comillas.
 
 ## Opción B: GitHub Codespaces (sin instalar nada)
 1. En GitHub: botón verde **Code → Codespaces → Create codespace on `<rama>`**.
@@ -44,7 +47,7 @@ En la barra lateral debe decir **"✅ Conectado por enlace"**. Si dice "⚠️ S
 
 ## Opción C: en tu computador
 ```bash
-git clone https://github.com/jdramirez-wq/mi-primera-app-streamlit && cd mi-primera-app-streamlit
+git clone https://github.com/jdramirez-wq/SODR-SITA-app-streamlit && cd SODR-SITA-app-streamlit
 git checkout <rama>
 pip install -r requirements.txt
 streamlit run app.py
@@ -52,11 +55,11 @@ streamlit run app.py
 
 ## Probar primero sin datos reales
 Archivos **ficticios** con el mismo formato, en `data/ejemplos/`: `ejemplo_PI_MP_evaplan.xlsx`,
-`ejemplo_Centralizadas.xlsx` y `ejemplo_PI_Drive.xlsx` (este último va en el cuadro 3). Con ellos la página debe
+`ejemplo_Centralizadas.xlsx` y `ejemplo_PI_Drive.xlsx` (este último va en "Agregar fuentes opcionales"). Con ellos la página debe
 mostrar 5 metas, 1 sin reporte y 3 con alertas.
 
 ## Lista de comprobación con una dependencia real
-- [ ] La barra lateral dice "Conectado por enlace" y la vigencia detectada es la correcta.
+- [ ] Dice "Plan Indicativo de Drive conectado por enlace" y la vigencia detectada es la correcta.
 - [ ] Metas en el Plan Indicativo = metas de la dependencia en Drive; las "sin reporte" son las que no reportó.
 - [ ] El `Resultado` y la meta de la vigencia de 2–3 metas coinciden con EVAPLAN.
 - [ ] Avance de actividades **por proyecto** coincide con lo que se ve en Centralizadas.
@@ -73,7 +76,7 @@ mostrar 5 metas, 1 sin reporte y 3 con alertas.
 ## Problemas frecuentes
 | Síntoma | Causa probable |
 |---|---|
-| "⚠️ Sin enlace configurado" | Falta el secreto, o la app no se reinició tras guardarlo |
+| "Sin enlace al Plan Indicativo de Drive" | Falta el secreto, o la app no se reinició tras guardarlo |
 | "No se pudo leer Drive (HTTPError 4xx)" | El libro no es público o el ID está mal copiado |
 | "Un archivo no tiene la estructura esperada" | Se subió un archivo en el cuadro equivocado, o EVAPLAN cambió columnas |
 | `ModuleNotFoundError: No module named 'src'` | La página se ejecutó como archivo principal. Ya está corregido en el código; además, **Main file path debe ser `app.py`** |

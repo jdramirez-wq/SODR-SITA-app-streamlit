@@ -43,6 +43,17 @@ def test_avance_acumulado_usa_logros_previos_y_resultado(matriz):
     assert f["avance_cuatrienio"] == 62 and f["pct_avance_pg"] == pytest.approx(0.62)
 
 
+def test_capacidad_se_mide_con_el_resultado_del_ultimo_anio(datos):
+    """Incremento Capacidad: la base aumenta gradualmente; el avance del cuatrienio es el nivel alcanzado (Resultado)."""
+    pi, ce, dr = (d.copy() for d in datos)
+    mp = "MP9900101019901001"
+    for d in (pi, dr):
+        d.loc[d["codigo_mp"] == mp, "comportamiento"] = "Incremento Capacidad"
+    f = S.construir_matriz(pi, ce, dr).set_index("codigo_mp").loc[mp]
+    assert pd.isna(f["logro_previo"])                              # no se suman los logros de 2024 y 2025
+    assert f["avance_cuatrienio"] == 12 and f["pct_avance_pg"] == pytest.approx(0.12)
+
+
 def test_flujo_no_acumula_logros_previos(matriz):
     f = matriz.loc["MP9900101029901002"]
     assert pd.isna(f["logro_previo"]) and pd.isna(f["pct_avance_pg"])

@@ -60,15 +60,20 @@ Prueba sobre el **PI original** de las 447 metas de producto del libro (`pg_vs_a
 
 | Comportamiento | Regla observada | Metas | Incumplen |
 |---|---|---|---|
-| Incremento Acumulado | PG = suma de los 4 años | 250 | 6 |
-| Incremento Capacidad | PG = suma de los 4 años (❓) | 4 | 2 |
-| Incremento Flujo | PG = valor de 2027 (❓) | 114 | 6 (p. ej. 2027 = 0 con PG > 0) |
+| Incremento Acumulado | PG = suma de los 4 años | 250 | 7 |
+| Incremento Capacidad | PG = valor de 2027: nivel alcanzado (✅ confirmado 8-oct; guía DNP) | 4 | 2 |
+| Incremento Flujo | PG = valor de 2027 | 114 | 5 (p. ej. 2027 = 0 con PG > 0) |
 | Mantenimiento Stock | todos los años = PG | 79 | 0 |
 | Reducción Anual (solo MR) | ❓ | — | no se valida |
 
 Son **14 metas** (3 % del libro) que no cumplen; una de ellas es de la entidad analizada (un acumulado cuyos años
 suman 2,5 veces el PG y que luego fue reprogramado). Pueden ser errores de digitación o que la regla no aplique
-a esos casos: ❓ pregunta 4. Por eso la regla se reporta como *advertencia*, no como error.
+a esos casos. Por eso la regla se reporta como *advertencia*, no como error.
+
+*Actualización 8-oct:* la tabla de arriba usaba la regla anterior para Capacidad (suma). Con la regla confirmada (PG =
+nivel de 2027) son 2 las metas de Capacidad del PI original que no cumplen (escritas como incrementos que se suman). La
+reprogramación vigente corrigió las 7 de Acumulado y las 5 de Flujo, y las 4 de Capacidad están escritas como nivel
+alcanzado con 2027 = PG: el plan original tenía errores de digitación y la regla queda confirmada.
 
 **La regla solo es válida sobre programación.** Aplicada al bloque vigente (que trae logros en vigencias
 cerradas) produce 27 falsas alarmas, 17 de ellas de Mantenimiento Stock: es otra señal de que ese bloque mezcla

@@ -24,8 +24,14 @@ Cuando se resuelva una, se mueve a [REGLAS_DE_NEGOCIO.md](REGLAS_DE_NEGOCIO.md) 
 ## Para confirmar (rápidas)
 1. **MR 2025:** en la hoja MR del Drive el encabezado 2025 no dice `VAL ALC`. ¿Falta cargar el logro 2025 de las
    metas de resultado, o solo falta renombrar el encabezado? (No afecta a la página mientras solo se usen MP.)
-2. **Reglas del PG** para Incremento Flujo, Capacidad y Reducción Anual: 14 metas del PI original no cumplen la regla
-   (por ejemplo, Flujo con 2027 = 0 y PG > 0). ¿Son errores de digitación o la regla es otra?
+2. ~~**Reglas del PG**~~ **Resuelto (8-oct):** *Incremento Capacidad* permite que la base aumente gradualmente y se
+   mide con el resultado del último año (guía de indicadores del DNP): PG = valor de 2027 y avance del cuatrienio =
+   Resultado. Las 14 metas del PI original que no cumplían eran errores de digitación: la reprogramación vigente las
+   corrigió. Reducción Anual (solo MR) sigue sin validarse.
+2b. **Línea base en Capacidad (pendiente de discusión):** el DNP describe el avance descontando la línea base,
+   `(Resultado − LB) / (PG − LB)`. **Decisión provisional (8-oct): no se descuenta**; la app usa `Resultado / PG`.
+   Solo cambia en metas con línea base mayor que 0 (en oct-2026, 1 de las 4 de Capacidad: 60,7 % hoy frente a 21,4 %
+   descontándola). Retomar con el equipo.
 
 ## Surgidas al probar con 10 dependencias reales
 3. **Actividades con avance 0 y observación vacía (`.`):** la circular prohíbe los vacíos. ¿Activamos una alerta por
