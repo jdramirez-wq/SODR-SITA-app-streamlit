@@ -69,6 +69,16 @@ def _resolver_columnas(esquema: Esquema, encabezados: list[str]) -> dict[str, in
     return indices
 
 
+def _aplicar(valores: pd.Series, funcion) -> list:
+    """Aplica `funcion` celda por celda y devuelve una lista de Python.
+
+    No se usa `Series.map` para resultados que no son valores simples (tuplas, diccionarios, None): según la versión de
+    pandas/pyarrow, `map` puede convertir los None en NA y luego `if p` falla ("boolean value of NA is ambiguous",
+    visto en Streamlit Cloud con un Z023 real).
+    """
+    return [funcion(v) for v in valores.astype(object).tolist()]
+
+
 def _serie(campo: Campo, valores: pd.Series) -> dict[str, pd.Series]:
     """Convierte una columna cruda según su tipo. Devuelve {nombre_columna: serie}."""
     n, t = campo.canonico, campo.tipo
@@ -85,20 +95,20 @@ def _serie(campo: Campo, valores: pd.Series) -> dict[str, pd.Series]:
         f = lz.moneda if t == "moneda" else lz.decimal
         return {n: valores.map(f).astype("Float64")}
     if t == "valor_np":
-        pares = valores.map(lz.valor_np)
+        pares = _aplicar(valores, lz.valor_np)
         return {
-            n: pares.map(lambda p: p[0]).astype("Float64"),
-            f"{n}_np": pares.map(lambda p: p[1]).astype("boolean"),
+            n: pd.Series([p[0] for p in pares], index=valores.index, dtype="Float64"),
+            f"{n}_np": pd.Series([p[1] for p in pares], index=valores.index, dtype="boolean"),
         }
     if t == "si_no":
         return {n: valores.map(lz.si_no).astype("boolean")}
     if t == "fecha":
         return {n: pd.to_datetime(valores.map(lz.fecha), errors="coerce")}
     if t == "codigo_nombre":
-        pares = valores.map(lz.dividir_codigo_nombre)
+        pares = _aplicar(valores, lz.dividir_codigo_nombre)
         return {
-            f"{n}_codigo": pares.map(lambda p: p[0]).astype("string"),
-            f"{n}_nombre": pares.map(lambda p: p[1]).astype("string"),
+            f"{n}_codigo": pd.Series([p[0] for p in pares], index=valores.index, dtype="string"),
+            f"{n}_nombre": pd.Series([p[1] for p in pares], index=valores.index, dtype="string"),
         }
     raise ValueError(f"Tipo desconocido '{t}' en el campo '{n}'")
 
@@ -147,12 +157,13 @@ def leer(origen, esquema: Esquema) -> pd.DataFrame:
 
 def enriquecer_codigo_mp(df: pd.DataFrame, columna: str = "codigo_mp") -> pd.DataFrame:
     """Agrega las partes del código MP: mr_del_mp, programa_mp, subprograma_mp, consecutivo_mp, producto_mga_mp."""
-    partes = df[columna].map(lz.descomponer_codigo_mp)
+    partes = _aplicar(df[columna], lz.descomponer_codigo_mp)          # dict, o None si el código no es válido
     df = df.copy()
-    df["codigo_mp_valido"] = partes.map(lambda p: p is not None).astype("boolean")
+    df["codigo_mp_valido"] = pd.Series([isinstance(p, dict) for p in partes], index=df.index, dtype="boolean")
     for clave, nombre in [("mr", "mr_del_mp"), ("programa", "programa_mp"), ("subprograma", "subprograma_mp"),
                           ("consecutivo", "consecutivo_mp"), ("producto_mga", "producto_mga_mp")]:
-        df[nombre] = partes.map(lambda p, k=clave: p[k] if p else pd.NA).astype("string")
+        df[nombre] = pd.Series([p[clave] if isinstance(p, dict) else pd.NA for p in partes], index=df.index,
+                               dtype="string")
     return df
 
 
