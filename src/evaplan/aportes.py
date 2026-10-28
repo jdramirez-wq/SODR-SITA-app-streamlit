@@ -94,7 +94,8 @@ def construir_aportes(z023: pd.DataFrame, matriz: pd.DataFrame, vigencia: int,
          .reset_index().rename(columns={"dependencia": "codigo_dependencia"}))
     g["vigencia"] = vigencia
     g["tipo_entidad"] = g["codigo_dependencia"].map(tipo_entidad)
-    g["es_propia"] = g["codigo_dependencia"].astype("string") == g["codigo_mp"].map(dueña)
+    # Sin código de dependencia (o de entidad dueña) no se puede afirmar que sea propio: cuenta como de otra entidad.
+    g["es_propia"] = (g["codigo_dependencia"].astype("string") == g["codigo_mp"].map(dueña)).fillna(False).astype(bool)
     g["n_sin_codigo_ps"] = g["n_sin_codigo_ps"].astype(int)
     return g[COLUMNAS_APORTES].sort_values(["codigo_mp", "es_propia", "codigo_dependencia", "proyecto_ppm"],
                                            ascending=[True, False, True, True]).reset_index(drop=True)
@@ -103,9 +104,11 @@ def construir_aportes(z023: pd.DataFrame, matriz: pd.DataFrame, vigencia: int,
 def resumen_por_meta(aportes: pd.DataFrame, codigos_mp: pd.Series) -> pd.DataFrame:
     """Por meta: n.º de proyectos y de entidades aportantes, valor y texto de los aportes ajenos."""
     filas = []
+    if aportes.empty:              # el Z023 no trae actividades de estas metas en la vigencia (p. ej., otro año)
+        aportes = pd.DataFrame(columns=COLUMNAS_APORTES).astype({"es_propia": bool})
     for mp in codigos_mp:
         a = aportes[aportes["codigo_mp"] == mp]
-        ajenos = a[~a["es_propia"]]
+        ajenos = a[~a["es_propia"].astype(bool)]
         texto = " | ".join(
             f"{r.codigo_dependencia} {r.nombre_dependencia} · {r.proyecto_ppm} ({r.n_actividades} act.)"
             for r in ajenos.itertuples()) if len(ajenos) else pd.NA

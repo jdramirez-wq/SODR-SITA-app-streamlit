@@ -121,3 +121,41 @@ def test_excel_incluye_hoja_de_aportes_solo_con_z023(res):
 def test_resultado_informa_las_filas_del_z023_por_vigencia(res):
     assert res.z023_filas_por_vigencia == {2025: 1, 2026: 8}
     assert pipeline.ejecutar(PI, CE, DR).z023_filas_por_vigencia == {}
+
+
+def test_z023_sin_actividades_de_las_metas_no_rompe_el_proceso():
+    """Caso real: Z023 de otra vigencia, o una entidad cuyas metas no están en el consolidado."""
+    z = L.leer_z023(EJ / "ejemplo_Z023.xlsx")
+    z["vigencia"] = 2030                                     # ninguna fila de la vigencia en curso
+    m = S.construir_matriz(L.leer_pi_mp_evaplan(EJ / "ejemplo_PI_MP_evaplan.xlsx"),
+                           L.leer_centralizadas(EJ / "ejemplo_Centralizadas.xlsx"),
+                           L.leer_pi_drive_mp(EJ / "ejemplo_PI_Drive.xlsx"), z023=z)
+    assert (m["n_proyectos_z023"] == 0).all() and m["aportes_otras_entidades"].isna().all()
+
+
+def test_aporte_sin_codigo_de_dependencia_cuenta_como_de_otra_entidad():
+    z = L.leer_z023(EJ / "ejemplo_Z023.xlsx")
+    z.loc[z.index[::2], "dependencia"] = pd.NA
+    m = S.construir_matriz(L.leer_pi_mp_evaplan(EJ / "ejemplo_PI_MP_evaplan.xlsx"),
+                           L.leer_centralizadas(EJ / "ejemplo_Centralizadas.xlsx"),
+                           L.leer_pi_drive_mp(EJ / "ejemplo_PI_Drive.xlsx"))
+    ap = A.construir_aportes(z, m, 2026)
+    assert ap["es_propia"].dtype == bool and not ap.loc[ap["codigo_dependencia"].isna(), "es_propia"].any()
+
+
+def test_codigo_mp_vacio_o_raro_no_rompe_la_lectura():
+    """Caso real (Streamlit Cloud, Z023 de oct-2026): 'boolean value of NA is ambiguous' al separar el código MP."""
+    df = pd.DataFrame({"codigo_mp": pd.Series(["MP9900101019901001", pd.NA, None, float("nan"), "MPMALO"], dtype=object)})
+    r = L.enriquecer_codigo_mp(df)
+    assert r["codigo_mp_valido"].tolist() == [True, False, False, False, False]
+    assert r["mr_del_mp"].iloc[0] == "99001" and r["mr_del_mp"].iloc[1:].isna().all()
+
+
+def test_aviso_si_el_z023_no_tiene_la_vigencia_o_no_trae_metas(monkeypatch):
+    z = L.leer_z023(EJ / "ejemplo_Z023.xlsx")
+    for cambio, texto in ((lambda d: d.assign(vigencia=2030), "no tiene actividades de la vigencia 2026"),
+                          (lambda d: d.assign(codigo_mp=pd.NA), "no trae códigos de meta de producto")):
+        monkeypatch.setattr(L, "leer_z023", lambda _o, d=cambio(z.copy()): L.enriquecer_codigo_mp(d))
+        r = pipeline.ejecutar(EJ / "ejemplo_PI_MP_evaplan.xlsx", EJ / "ejemplo_Centralizadas.xlsx",
+                              EJ / "ejemplo_PI_Drive.xlsx", z023="cualquiera")
+        assert any(texto in a for a in r.avisos)

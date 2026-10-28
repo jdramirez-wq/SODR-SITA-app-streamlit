@@ -61,6 +61,14 @@ def ejecutar(pi_mp_evaplan, centralizadas, drive=None, vigencia: int | None = No
     calidad = V.validar_todo(pi_mp_evaplan=pi, centralizadas=ce, drive_mp=dr, vigencia=vigencia, z023=zz)
     equivalencias = A.equivalencias_z023(A.entidades_de(pi, ce), zz) if zz is not None else {}
     aportes = A.construir_aportes(zz, matriz, vigencia, equivalencias) if zz is not None else None
+    if zz is not None:
+        if not zz["codigo_mp_valido"].fillna(False).any():
+            avisos.append("El Z023 cargado no trae códigos de meta de producto válidos en la columna 'Codigo Meta Producto' "
+                          "(¿fórmulas sin calcular o columna vacía?): no se pueden mostrar los aportes por meta.")
+        elif vigencia not in set(zz["vigencia"].dropna().astype(int)):
+            anios = ", ".join(str(int(a)) for a in sorted(zz["vigencia"].dropna().unique())) or "ninguna"
+            avisos.append(f"El Z023 cargado no tiene actividades de la vigencia {vigencia} (trae: {anios}): ninguna meta "
+                          "mostrará proyectos del Z023.")
     extra = ({"usa_z023": True, "aportes": aportes, "z023_equivalencias": equivalencias,
               "z023_filas_por_vigencia": {int(a): int(n) for a, n in zz["vigencia"].value_counts().sort_index().items()}}
              if aportes is not None else {})

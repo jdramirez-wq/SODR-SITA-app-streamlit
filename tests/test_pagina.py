@@ -35,3 +35,13 @@ def test_la_app_de_prueba_arranca_desde_el_archivo_de_compatibilidad():
     for nombre in ("1_Auditoria_EVAPLAN.py", "2_POAI_2027.py"):
         at = AppTest.from_file(str(RAIZ / "pages" / nombre), default_timeout=30).run()
         assert not at.exception
+
+
+def test_el_error_indica_en_que_parte_del_codigo_ocurrio():
+    from interfaz import seguimiento as vista
+    from src.evaplan import validaciones as V
+    try:
+        V.inferir_vigencia(None)
+    except Exception as e:
+        assert vista.lugar_del_error(e).startswith("src/evaplan/validaciones.py:")
+        assert "Traceback" in vista.detalle_del_error(e)

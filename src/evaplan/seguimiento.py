@@ -233,6 +233,8 @@ def construir_matriz(pi_mp: pd.DataFrame, centralizadas: pd.DataFrame, drive_mp:
     if z023 is not None:
         eq = A.equivalencias_z023(A.entidades_de(pi_mp, centralizadas), z023)
         m = m.join(A.resumen_por_meta(A.construir_aportes(z023, m, vigencia, eq), m["codigo_mp"]), on="codigo_mp")
+        conteos = ["n_proyectos_z023", "n_entidades_aportantes", "n_proyectos_ajenos"]
+        m[conteos] = m[conteos].fillna(0).astype(int)      # una meta sin fila en el resumen tiene 0 proyectos
     h = detectar_hallazgos(m, criterio_flexible)
     if len(h):
         # El texto lista primero lo que requiere revisión y después lo informativo; el contador solo cuenta lo primero.
