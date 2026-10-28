@@ -4,6 +4,9 @@ Las cifras usan el mismo formato que el PDF y el Excel (src/evaplan/formato.py).
 """
 from __future__ import annotations
 
+import traceback
+from pathlib import Path
+
 import pandas as pd
 import streamlit as st
 
@@ -21,6 +24,29 @@ from . import estilos
 def _md(texto) -> str:
     """Escapa el signo $ para que Markdown no lo tome por una fórmula matemática."""
     return str(texto).replace("$", "\\$")
+
+
+# ------------------------------------------------------------------ errores
+_RAIZ = Path(__file__).resolve().parent.parent
+
+
+def _pasos_propios(e: BaseException) -> list:
+    """Pasos del traceback que están en el código del proyecto (no en librerías)."""
+    return [f for f in traceback.extract_tb(e.__traceback__) if Path(f.filename).resolve().is_relative_to(_RAIZ)]
+
+
+def lugar_del_error(e: BaseException) -> str:
+    """Último punto del código del proyecto por donde pasó el error: 'src/evaplan/x.py:120 (función)'."""
+    propios = _pasos_propios(e)
+    if not propios:
+        return ""
+    f = propios[-1]
+    return f"{Path(f.filename).resolve().relative_to(_RAIZ)}:{f.lineno} ({f.name})"
+
+
+def detalle_del_error(e: BaseException) -> str:
+    """Traceback (solo código, sin contenido de los archivos) para diagnosticar el error."""
+    return "".join(traceback.format_exception(type(e), e, e.__traceback__, limit=-12))
 
 
 # ------------------------------------------------------------------ encabezado, cifras y acciones

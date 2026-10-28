@@ -141,3 +141,9 @@ def test_las_validaciones_de_drive_solo_miran_las_entidades_cargadas(fuentes):
     assert not any(h["llave"].isin(dm.loc[ajena, "codigo_mp"]))         # no se reporta: no es de la dependencia
     solo_ajena = V.validar_todo(drive_mp=dm)                            # sin archivos de EVAPLAN se revisa todo el libro
     assert any(solo_ajena["llave"].isin(dm.loc[ajena, "codigo_mp"]))
+
+
+def test_marca_np_vacia_cuenta_como_no_programado_falso(fuentes):
+    ev = fuentes["pi_mp_evaplan"].copy()
+    ev["valor_pg_np"] = pd.array([pd.NA] * len(ev), dtype="boolean")
+    V.valores_evaplan_vs_drive(ev, fuentes["drive_mp"])     # no debe lanzar "boolean value of NA is ambiguous"

@@ -148,7 +148,11 @@ if procesar:
         st.error(f"**Un archivo no tiene la estructura esperada.** ¿Subiste cada archivo en su lugar?\n\n{e}")
     except Exception as e:
         memoria.olvidar(["resultado", "archivos", "filtro_metas"])
-        st.error(f"Ocurrió un error al procesar los archivos: {type(e).__name__}: {e}")
+        lugar = vista.lugar_del_error(e)
+        st.error(f"Ocurrió un error al procesar los archivos: {type(e).__name__}: {e}"
+                 + (f"\n\nOcurrió en: `{lugar}`" if lugar else ""))
+        with st.expander("Detalle técnico del error (cópialo y envíalo a quien mantiene la app)"):
+            st.code(vista.detalle_del_error(e), language="text")
 
 if res is None:
     if recuperadas is None:

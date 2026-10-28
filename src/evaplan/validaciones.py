@@ -26,6 +26,11 @@ def _h(regla, severidad, fuente, llave, detalle, fila=None) -> dict:
             "fila_excel": fila, "detalle": detalle}
 
 
+def _si(x) -> bool:
+    """Marca booleana que puede venir vacía (NA): vacío cuenta como 'no'."""
+    return False if _na(x) else bool(x)
+
+
 def _na(x) -> bool:
     return x is None or x is pd.NA or (isinstance(x, float) and math.isnan(x))
 
@@ -61,7 +66,7 @@ def codigo_mp_coherente(df: pd.DataFrame, fuente: str) -> pd.DataFrame:
     h = []
     for _, r in df.iterrows():
         mp = r["codigo_mp"]
-        if not r["codigo_mp_valido"]:
+        if not _si(r["codigo_mp_valido"]):
             h.append(_h("codigo_mp_formato", "error", fuente, mp, "no cumple MP+5+2+2+7 dígitos", r["fila_excel"]))
             continue
         if "programa_codigo" in df.columns and not _na(r["programa_codigo"]) and r["programa_codigo"] != r["programa_mp"]:
@@ -128,10 +133,12 @@ def valores_evaplan_vs_drive(df_ev: pd.DataFrame, df_dr: pd.DataFrame, llave: st
         if r[llave] not in dr.index:
             continue
         d = dr.loc[r[llave]]
+        if isinstance(d, pd.DataFrame):          # meta repetida en Drive (lo reporta llave_unica): se compara la primera
+            d = d.iloc[0]
         difs = []
         for c in campos:
             a, b = r[c], d[c]
-            np_a, np_b = bool(r[f"{c}_np"]), bool(d[f"{c}_np"])
+            np_a, np_b = _si(r.get(f"{c}_np")), _si(d.get(f"{c}_np"))
             if np_a != np_b or (not np_a and (_na(a) != _na(b) or (not _na(a) and not _cerca(a, b)))):
                 txt = lambda v, n: "NP" if n else _fmt(v)  # noqa: E731
                 difs.append(f"{c.replace('valor_', '')}: EVAPLAN {txt(a, np_a)} vs Drive {txt(b, np_b)}")

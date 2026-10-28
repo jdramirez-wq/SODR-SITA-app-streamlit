@@ -121,3 +121,23 @@ def test_excel_incluye_hoja_de_aportes_solo_con_z023(res):
 def test_resultado_informa_las_filas_del_z023_por_vigencia(res):
     assert res.z023_filas_por_vigencia == {2025: 1, 2026: 8}
     assert pipeline.ejecutar(PI, CE, DR).z023_filas_por_vigencia == {}
+
+
+def test_z023_sin_actividades_de_las_metas_no_rompe_el_proceso():
+    """Caso real: Z023 de otra vigencia, o una entidad cuyas metas no están en el consolidado."""
+    z = L.leer_z023(EJ / "ejemplo_Z023.xlsx")
+    z["vigencia"] = 2030                                     # ninguna fila de la vigencia en curso
+    m = S.construir_matriz(L.leer_pi_mp_evaplan(EJ / "ejemplo_PI_MP_evaplan.xlsx"),
+                           L.leer_centralizadas(EJ / "ejemplo_Centralizadas.xlsx"),
+                           L.leer_pi_drive_mp(EJ / "ejemplo_PI_Drive.xlsx"), z023=z)
+    assert (m["n_proyectos_z023"] == 0).all() and m["aportes_otras_entidades"].isna().all()
+
+
+def test_aporte_sin_codigo_de_dependencia_cuenta_como_de_otra_entidad():
+    z = L.leer_z023(EJ / "ejemplo_Z023.xlsx")
+    z.loc[z.index[::2], "dependencia"] = pd.NA
+    m = S.construir_matriz(L.leer_pi_mp_evaplan(EJ / "ejemplo_PI_MP_evaplan.xlsx"),
+                           L.leer_centralizadas(EJ / "ejemplo_Centralizadas.xlsx"),
+                           L.leer_pi_drive_mp(EJ / "ejemplo_PI_Drive.xlsx"))
+    ap = A.construir_aportes(z, m, 2026)
+    assert ap["es_propia"].dtype == bool and not ap.loc[ap["codigo_dependencia"].isna(), "es_propia"].any()
